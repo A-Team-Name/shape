@@ -7,17 +7,23 @@
 ⍝ data⍪←  1 0 0 1 1 1 0 0 0 0 0 0 0 1 1 1 1 1
 ⍝ data⍪←  1 0 1 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0
 ⍝ data⍪←  1 1 1 0 1 1 1 1 0 0 0 0 0 0 0 1 0 0
+⍝ ⎕←' ⌸'[data]
 
-data ←⍉⍪0 0 0 0 0
-data⍪←  0 1 0 0 0
-data⍪←  0 0 0 0 0
-data⍪←  1 1 1 1 1
-data⍪←  0 0 0 0 0
-data⍪←  0 0 0 1 0
+⍝ data ←⍉⍪0 0 0 0 0
+⍝ data⍪←  0 1 0 0 0
+⍝ data⍪←  0 0 0 0 0
+⍝ data⍪←  1 1 1 1 1
+⍝ data⍪←  0 0 0 0 0
+⍝ data⍪←  0 0 0 1 0
 
 tie←'josh.rgb' ⎕NTIE 0
 data←¯1≠(124 877 3⍴⎕NREAD tie 83 ¯1)[;;0]
 ⎕NUNTIE tie
+
+⍝ TODO
+⍝ - iterate over i,j pairs, but still use 1d index in p
+⍝ - do first row and column independently, avoid validity check for later rows
+⍝ - no need to find roots in the loop
 
 (h w)←⍴data
 p←⍳×/⍴data
@@ -33,6 +39,8 @@ p←⍳×/⍴data
 }¨p
 p←{p[⍵]}⍣≡p
 s←(,data)×1+p
+⍝ ⎕←(⍴data)⍴s
+⍝ ⎕←''
 c←{⍵[⍋⍵]}∪s
 s←c⍳s
 ⍝ ⎕←(⍴data)⍴('.',⎕A)[s]
@@ -42,8 +50,8 @@ i←w|⍸¨m
 min←⌊/¨i
 max←⌈/¨i
 m{(⍺/s)←⍵}¨1+⌊/⍤⍸⍤1(⊢∨∨.∧⍨)⍣≡∨∘⍉⍨(min∘.≥min)∧(max∘.≤max)∨min∘.≤min+0.5×max-min
-⍝ c←1↓∪s
-⍝ ('.',⎕A)[(⊢(×⍤2)c∘.=⊢)s⍴⍨⍴data]
+c←1↓∪s
+('.',⎕A)[(⊢(×⍤2)c∘.=⊢)s⍴⍨⍴data]
 {
 	n←⍕⍵
 	name←n,'.gray'

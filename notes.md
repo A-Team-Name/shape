@@ -9,3 +9,5 @@ to get info about the original image
 to convert to raw rgb samples (seems to default to 8 bits per channel)
 
 ```magick josh.webp josh.rgb```
+
+

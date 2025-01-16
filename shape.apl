@@ -21,24 +21,29 @@ data←¯1≠(124 877 3⍴⎕NREAD tie 83 ¯1)[;;0]
 ⎕NUNTIE tie
 
 ⍝ TODO
-⍝ - iterate over i,j pairs, but still use 1d index in p
-⍝ - do first row and column independently, avoid validity check for later rows
-⍝ - no need to find roots in the loop
+⍝ - [x] iterate over i,j pairs
+⍝ - [ ] do first row and column independently, avoid validity check for later rows
+
+⍝ 'disp' 'displays' ⎕cy 'dfns'
 
 (h w)←⍴data
-p←⍳×/⍴data
+p←(⍉w h⍴⍳h),⍤0⊢h w⍴⍳w
 {
-	~data[⌊⍵÷w;w|⍵]: ⍵
-	(l u)←⍵+¯1,-w
-	i←u,⍣(u≥0) ⊢ l,⍣(l=⍥(⌊÷∘w)⍵) ⊢ ⍬
-	i/⍨←data[i(⌊⍤÷,¨|⍨)w]
-	0=≢i: ⍵
-	r←{p[⍵]}⍣≡i
-	p[⍵,1↓r]←⊃r
+	(i j)←⍵
+	~data[i;j]: ⍵
+	k←(i≥1)(j≥1)/(¯1 0)(0 ¯1)+¨⊂(i j)
+	k/⍨←data[k]
+	0=≢k: ⍵
+	k←⌷∘p¨⍣≡k
+	p[i;j;]←⊃k
+	1=≢k: ⍵
+	((1⊃k)⌷p)←⊃k
 	⍵
-}¨p
+}⍤1⊢p
+p←,+/w 1×⍤1⊢p
 p←{p[⍵]}⍣≡p
 s←(,data)×1+p
+⍝ ⎕←h w⍴⍳h×w
 ⍝ ⎕←(⍴data)⍴s
 ⍝ ⎕←''
 c←{⍵[⍋⍵]}∪s
@@ -50,10 +55,11 @@ i←w|⍸¨m
 min←⌊/¨i
 max←⌈/¨i
 m{(⍺/s)←⍵}¨1+⌊/⍤⍸⍤1(⊢∨∨.∧⍨)⍣≡∨∘⍉⍨(min∘.≥min)∧(max∘.≤max)∨min∘.≤min+0.5×max-min
-c←1↓∪s
-('.',⎕A)[(⊢(×⍤2)c∘.=⊢)s⍴⍨⍴data]
+⍝ c←1↓∪s
+⍝ ('.',⎕A)[(⊢(×⍤2)c∘.=⊢)s⍴⍨⍴data]
 {
 	n←⍕⍵
+	⎕←'writing' n
 	name←n,'.gray'
 	_←⎕SH 'touch ',name
 	tie←name ⎕NTIE 0

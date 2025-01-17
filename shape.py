@@ -3,7 +3,6 @@ import numpy as np
 from math import floor
 import matplotlib.pyplot as plt
 
-
 def split(image):
     # this will be disgusting to read and I can only apologise
     data = image[:, :, 0] != 255
@@ -73,8 +72,8 @@ def split(image):
     glyphs.sort()
     glyphs = [glyph[2] for glyph in glyphs]
 
-    for glyph in glyphs: plt.matshow(glyph)
-    plt.show()
+    # for glyph in glyphs: plt.matshow(glyph)
+    # plt.show()
 
     return glyphs
 

@@ -136,8 +136,7 @@ Distribute←{
 
 	⍝ https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html
 	⍝ for now we do the very simple estimate
-	d←-⌿⍤2⊢⍵[;2 0;]
-	a←  .5*⍨+⌿×⍨d
+	a←  .5*⍨+⌿×⍨ -⌿⍤2⊢⍵[;2 0;]
 	b←+⌿.5*⍨+⌿×⍨2-⌿⍤2⊢⍵
 	l←a+2×b
 	n←≢⍤⊢⌸(+\l)⍸⍺÷⍨(+/l)×⍳⍺ ⍝ could be a way to do this that uses less space idk

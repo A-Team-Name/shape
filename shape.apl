@@ -148,17 +148,35 @@ Distribute←{
 }
 
 Contexts←{
+	⍝ ⍺[0]: number of distance bins
+	⍝ ⍺[1]: number of angle bins
 	⍝ ⍵: points matrix with shape 2 (x y) × n
-	⍝ ←: n×_×_ array of shape contexts
-	⍵
+	⍝ ←: n×⍺[0]×⍺[1] array of shape contexts
+
+	⍺←5 12
+	(rb tb)←⍺
+	⍝ potential optimisation: only do triangle
+	d←-⍨⍤0 1⍨⍤1⊢⍵
+	r←⍟(⊢∨0=⊢).5*⍨+⌿×⍨d
+	t←(12○⊣+0J1×⊢)⌿d ⍝ https://aplcart.info?q=atan2
+	i  ←r⍸⍨(⌈/∊r)×(⍳÷   ⊢)rb
+	i,¨←t⍸⍨○¯1+   (⍳÷.5×⊢)tb
+	{
+		h←rb tb⍴0
+		h[⍵]+←1
+		h
+	}⍤1⊢i
 }
 
 ⍝ Save Split Load 'josh.rgb'
 
-⎕←'import matplotlib.pyplot as plt'
-{
-	⎕←'plt.scatter('
-	⎕←'[0-9-,.]+'⎕R'[&],'⊢⍵⎕CSV⊂''
-	⎕←')'
-	⎕←'plt.show()'
-}¨100 Distribute¨ Loot ⍬
+⎕←displays Contexts ↑(¯1 0 1 ¯1 0 1 ¯1 0 1)(1 1 1 0 0 0 ¯1 ¯1 ¯1)
+⍝ ⎕←displays Contexts 100 Distribute ⊃Loot ⍬
+
+⍝ ⎕←'import matplotlib.pyplot as plt'
+⍝ {
+⍝ 	⎕←'plt.scatter('
+⍝ 	⎕←'[0-9-,.]+'⎕R'[&],'⊢⍵⎕CSV⊂''
+⍝ 	⎕←')'
+⍝ 	⎕←'plt.show()'
+⍝ }¨100 Distribute¨ Loot ⍬

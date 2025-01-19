@@ -126,12 +126,12 @@ Loot←{
 		}¨1↓kv{
 			⊂↓⍉↑{(⊃1⊃⎕VFI)¨'-'⎕R'¯'¨⊢/⍵}¨⍵
 		}⌸⍨p×p∊⍸'contour'∘≡¨e
-	}¨⊂⊃'[A-Z]'⎕R'&_'¨n
+	}¨'[A-Z]'⎕R'&_'¨n
 }
 
 Distribute←{
 	⍝ ⍺: number of points to distribute
-	⍝ ⍵: curve set with shape 2 (x y) × 3 (start control end) × n (number of curves)
+	⍝ ⍵: curve set with shape 2 (x y) × 3 (start control end) × n (curves)
 	⍝ ←: points matrix with shape 2 (x y) × ⍺
 
 	⍝ https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html
@@ -139,19 +139,26 @@ Distribute←{
 	a←  .5*⍨+⌿×⍨ -⌿⍤2⊢⍵[;2 0;]
 	b←+⌿.5*⍨+⌿×⍨2-⌿⍤2⊢⍵
 	l←a+2×b
-	n←≢⍤⊢⌸(+\l)⍸⍺÷⍨(+/l)×⍳⍺ ⍝ could be a way to do this that uses less space idk
-	t←n+\⍤⍴¨÷n
+	n←⊃{⍵@⍺⊢0⍴⍨≢l}/↓⍉{⍺,≢⍵}⌸1+(+\l)⍸⍺÷⍨(+/l)×⍳⍺ ⍝ could be a way to do this that uses less space idk
+	t←n+\⍤⍴¨÷n⌈n=0
 	t←↑(1-t) t
 	a←     +⌿⍤2⊢t×⍤2⊢⍵[;0 1;]
 	b←     +⌿⍤2⊢t×⍤2⊢⍵[;1 2;]
 	(⊃,/)⍤1+⌿⍤2⊢t×⍤2⊢1 0 2⍉↑a b
 }
 
+Contexts←{
+	⍝ ⍵: points matrix with shape 2 (x y) × n
+	⍝ ←: n×_×_ array of shape contexts
+	⍵
+}
+
 ⍝ Save Split Load 'josh.rgb'
 
-loot←Loot ⍬
-⍝ ⎕←{⍵[;0 2;]}¨loot
-p←100 Distribute¨ loot
-⎕←⎕CSV∘(,⊂'')⊃p
-
-⍝ ⎕←⊃100 Distribute¨ Loot ⍬
+⎕←'import matplotlib.pyplot as plt'
+{
+	⎕←'plt.scatter('
+	⎕←'[0-9-,.]+'⎕R'[&],'⊢⍵⎕CSV⊂''
+	⎕←')'
+	⎕←'plt.show()'
+}¨100 Distribute¨ Loot ⍬

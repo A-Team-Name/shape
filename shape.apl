@@ -4,6 +4,8 @@
 'dec' 'disp' 'displays'⎕CY'dfns'
 
 Load←{
+	⍝ ⍵: ⍬
+	⍝ ←: bitarray
 	tie←⍵ ⎕NTIE 0
 	data←¯1≠(124 877 3⍴⎕NREAD tie 83 ¯1)[;;0]
 	_←⎕NUNTIE tie
@@ -11,6 +13,9 @@ Load←{
 }
 
 Split←{
+	⍝ ⍵: bitarray to split
+	⍝ ←: list of split bitarrays
+
 	⍝ data ←⍉⍪0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 	⍝ data⍪←  1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
 	⍝ data⍪←  1 0 0 0 0 1 0 0 0 1 1 1 0 0 0 0 0 0
@@ -70,11 +75,14 @@ Split←{
 }
 
 Save←{
+	⍝ ⍵: list of bitarrays to save
+	⍝ ←: ⍬
+
 	glyphs←⍵
 	{
 		n←⍕⍵
 		g←⍵⊃glyphs
-		⎕←'writing' n
+		⍝ ⎕←'writing' n
 		name←n,'.gray'
 		_←⎕SH 'touch ',name
 		tie←name ⎕NTIE 0
@@ -85,37 +93,66 @@ Save←{
 	}¨⍳≢glyphs
 }
 
+Loot←{
+	⍝ ⍵: ⍬
+	⍝ ←: list of curve sets each with shape 2 (x y) × 3 (start control end) × n (number of curves)
+
+	⍝ ttx -s BQN386.ttf # for ttx files
+	DepthToParent←{
+		d←⍵
+		p←⍳≢d
+		_←2{p[⍵]←⍺[⍺⍸⍵]}/⊂⍤⊢⌸d
+		p
+	}
+	(d e x kv t)←↓⍉⎕XML⊃⎕NGET'font/BQN386._c_m_a_p.ttx'
+	p←DepthToParent d
+	(u n)←↓⍉↑⊢/¨kv/⍨p=1⊃⍸p=1
+	⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
+	cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+	n←n[cs⍳⍨⎕UCS dec¨u]
+	{
+		(d e x kv t)←↓⍉⎕XML⊃⎕NGET'font/BQN386._g_l_y_f.',⍵,'.ttx'
+		p←DepthToParent d
+		⊃,/{
+			(x y on)←⍵
+			m←2=/(⊢⍴⍨1+⍴)on
+			i←⍸m
+			x←(2÷⍨x[i]+x[(≢x)|i+1])@(1+(⊢+⍳⍤≢)i)⊢(m+1)/x
+			y←(2÷⍨y[i]+y[(≢y)|i+1])@(1+(⊢+⍳⍤≢)i)⊢(m+1)/y
+			on←(~on[i])@(1+(⊢+⍳⍤≢)i)⊢(m+1)/on ⍝ should be 1 0 1 0 ... 1 0
+			x←⍉(⊢⍴⍨3,⍨3÷⍨⍴)1⌽(on+1)/x
+			y←⍉(⊢⍴⍨3,⍨3÷⍨⍴)1⌽(on+1)/y
+			↑x y
+		}¨1↓kv{
+			⊂↓⍉↑{(⊃1⊃⎕VFI)¨'-'⎕R'¯'¨⊢/⍵}¨⍵
+		}⌸⍨p×p∊⍸'contour'∘≡¨e
+	}¨⊂⊃'[A-Z]'⎕R'&_'¨n
+}
+
+Distribute←{
+	⍝ ⍺: number of points to distribute
+	⍝ ⍵: curve set with shape 2 (x y) × 3 (start control end) × n (number of curves)
+	⍝ ←: points matrix with shape 2 (x y) × ⍺
+
+	⍝ https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html
+	⍝ for now we do the very simple estimate
+	d←-⌿⍤2⊢⍵[;2 0;]
+	a←  .5*⍨+⌿×⍨d
+	b←+⌿.5*⍨+⌿×⍨2-⌿⍤2⊢⍵
+	l←a+2×b
+	n←≢⍤⊢⌸(+\l)⍸⍺÷⍨(+/l)×⍳⍺ ⍝ could be a way to do this that uses less space idk
+	t←n+\⍤⍴¨÷n
+	t←↑(1-t) t
+	a←     +⌿⍤2⊢t×⍤2⊢⍵[;0 1;]
+	b←     +⌿⍤2⊢t×⍤2⊢⍵[;1 2;]
+	(⊃,/)⍤1+⌿⍤2⊢t×⍤2⊢1 0 2⍉↑a b
+}
+
 ⍝ Save Split Load 'josh.rgb'
 
-⍝ ttx -s BQN386.ttf
-⍝ TODO:
-⍝ - [ ] extract glyph data from ttx
-⍝ - [ ] figure out what to do next
+loot←Loot ⍬
+⍝ ⎕←{⍵[;0 2;]}¨loot
+p←100 Distribute¨ loot
+⎕←⎕CSV∘(,⊂'')⊃p
 
-DepthToParent←{
-    d←⍵
-    p←⍳≢d
-    _←2{p[⍵]←⍺[⍺⍸⍵]}/⊂⍤⊢⌸d
-    p
-}
-(d e x kv t)←↓⍉⎕XML⊃⎕NGET'font/BQN386._c_m_a_p.ttx'
-p←DepthToParent d
-(u n)←↓⍉↑⊢/¨kv/⍨p=1⊃⍸p=1
-⍝ ascii - `"` + `˙` + specials
-cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-n←n[cs⍳⍨⎕UCS dec¨u]
-⎕←{
-	d e x kv t←↓⍉⎕XML⊃⎕NGET'font/BQN386._g_l_y_f.',⍵,'.ttx'
-	p←DepthToParent d
-	⍪{
-		(x y on)←⍵
-		m←2=/(⊢⍴⍨1+⍴)on
-		i←⍸m
-		x←(2÷⍨x[i]+x[(≢x)|i+1])@(1+(⊢+⍳⍤≢)i)⊢(m+1)/x
-		y←(2÷⍨y[i]+y[(≢y)|i+1])@(1+(⊢+⍳⍤≢)i)⊢(m+1)/y
-		on←(~on[i])@(1+(⊢+⍳⍤≢)i)⊢(m+1)/on ⍝ for sanity, should be 1 0 1 0 ... 1 0
-		↑x y on
-	}¨1↓kv{
-		⊂↓⍉↑{(⊃1⊃⎕VFI)¨'-'⎕R'¯'¨⊢/⍵}¨⍵
-	}⌸⍨p×p∊⍸'contour'∘≡¨e
-}⊃'[A-Z]'⎕R'&_'¨n
+⍝ ⎕←⊃100 Distribute¨ Loot ⍬

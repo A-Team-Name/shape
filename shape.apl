@@ -168,10 +168,17 @@ Contexts←{
 	}⍤1⊢i
 }
 
+EdgePoints←{
+	⍝ ⍵: bit array to find edgepoints on
+	⍝ ←: 2×_ array of edgepoint coords
+
+	⍝ potential improvement: also check diagonal corners so we have more points
+	⍉↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
+}
+
 ⍝ Save Split Load 'josh.rgb'
 
-⎕←displays Contexts ↑(¯1 0 1 ¯1 0 1 ¯1 0 1)(1 1 1 0 0 0 ¯1 ¯1 ¯1)
-⍝ ⎕←displays Contexts 100 Distribute ⊃Loot ⍬
+⍝ ⎕←displays Contexts ↑(¯1 0 1 ¯1 0 1 ¯1 0 1)(1 1 1 0 0 0 ¯1 ¯1 ¯1)
 
 ⍝ ⎕←'import matplotlib.pyplot as plt'
 ⍝ {
@@ -180,3 +187,10 @@ Contexts←{
 ⍝ 	⎕←')'
 ⍝ 	⎕←'plt.show()'
 ⍝ }¨100 Distribute¨ Loot ⍬
+
+⍝ ⎕←displays Contexts 100 Distribute ⊃Loot ⍬
+input←Contexts¨ EdgePoints¨ Split Load 'josh.rgb'
+loot←Loot ⍬
+{
+	font←Contexts¨ (≢⍵) Distribute¨ loot
+}¨input

@@ -98,21 +98,21 @@ Loot←{
 	⍝ ←: list of curve sets each with shape 2 (x y) × 3 (start control end) × n (number of curves)
 
 	⍝ ttx -s BQN386.ttf # for ttx files
-	DepthToParent←{
+	D2P←{
 		d←⍵
 		p←⍳≢d
 		_←2{p[⍵]←⍺[⍺⍸⍵]}/⊂⍤⊢⌸d
 		p
 	}
 	(d e x kv t)←↓⍉⎕XML⊃⎕NGET'font/BQN386._c_m_a_p.ttx'
-	p←DepthToParent d
+	p←D2P d
 	(u n)←↓⍉↑⊢/¨kv/⍨p=1⊃⍸p=1
 	⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
 	cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
 	n←n[cs⍳⍨⎕UCS dec¨u]
 	{
 		(d e x kv t)←↓⍉⎕XML⊃⎕NGET'font/BQN386._g_l_y_f.',⍵,'.ttx'
-		p←DepthToParent d
+		p←D2P d
 		⊃,/{
 			(x y on)←⍵
 			m←2=/(⊢⍴⍨1+⍴)on
@@ -170,14 +170,16 @@ Contexts←{
 }
 
 EdgePoints←{
+	⍝ ⍺: maximum number of edgepoints to pick (default 100)
 	⍝ ⍵: bit array to find edgepoints on
 	⍝ ←: 2×_ array of edgepoint coords
 
 	⍝ potential improvement: also check diagonal corners so we have more points
-	⍉↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
+	⍺←100
+	p←⍉↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
+	⍺>1⊃⍴p: p
+	p[;{⍵[⍋⍵]}⍺?1⊃⍴p]
 }
-
-⍝ Save Split Load 'josh.rgb'
 
 ⍝ ⎕←displays Contexts ↑(¯1 0 1 ¯1 0 1 ¯1 0 1)(1 1 1 0 0 0 ¯1 ¯1 ¯1)
 
@@ -189,9 +191,8 @@ EdgePoints←{
 ⍝ 	⎕←'plt.show()'
 ⍝ }¨100 Distribute¨ Loot ⍬
 
-⍝ ⎕←displays Contexts 100 Distribute ⊃Loot ⍬
-input←Contexts¨ EdgePoints¨ Split Load 'josh.rgb'
-loot←Loot ⍬
-{
-	font←Contexts¨ (≢⍵) Distribute¨ loot
-}¨input
+font ←⊃Contexts¨ 100 Distribute¨ ⊂⊃Loot ⍬
+input←⊃Contexts¨ 100 EdgePoints¨ ⊂⊃Split Load 'josh.rgb'
+e←.5×+/⍤,⍤2⊢font(×⍨⍤-÷+)⍤2⍤2 3⊢input
+
+⍝ O(n*4) algorithm for now: https://en.wikipedia.org/wiki/Hungarian_algorithm#Matrix_formulation

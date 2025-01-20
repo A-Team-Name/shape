@@ -156,11 +156,12 @@ Contexts←{
 	⍺←5 12
 	(rb tb)←⍺
 	⍝ potential optimisation: only do triangle
+	⍝ TODO: eliminate self
 	d←-⍨⍤0 1⍨⍤1⊢⍵
 	r←⍟(⊢∨0=⊢).5*⍨+⌿×⍨d
 	t←(12○⊣+0J1×⊢)⌿d ⍝ https://aplcart.info?q=atan2
-	i  ←r⍸⍨(⌈/∊r)×(⍳÷   ⊢)rb
-	i,¨←t⍸⍨○¯1+   (⍳÷.5×⊢)tb
+	i  ←1+r⍸⍨(⌈/∊r)×(⍳÷   ⊢)rb-1
+	i,¨←  t⍸⍨○¯1+   (⍳÷.5×⊢)tb
 	{
 		h←rb tb⍴0
 		h[⍵]+←1

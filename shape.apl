@@ -2,6 +2,7 @@
 ⎕PW←12345
 
 'dec' 'disp' 'displays'⎕CY'dfns'
+cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
 
 Load←{
 	⍝ ⍵: ⍬
@@ -108,7 +109,6 @@ Loot←{
 	p←D2P d
 	(u n)←↓⍉↑⊢/¨kv/⍨p=1⊃⍸p=1
 	⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
-	cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
 	n←n[cs⍳⍨⎕UCS dec¨u]
 	{
 		(d e x kv t)←↓⍉⎕XML⊃⎕NGET'font/BQN386._g_l_y_f.',⍵,'.ttx'
@@ -176,7 +176,7 @@ EdgePoints←{
 
 	⍝ potential improvement: also check diagonal corners so we have more points
 	⍺←100
-	p←⍉↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
+	p←⍉⌽↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
 	⍺>1⊃⍴p: p
 	p[;{⍵[⍋⍵]}⍺?1⊃⍴p]
 }
@@ -191,8 +191,17 @@ EdgePoints←{
 ⍝ 	⎕←'plt.show()'
 ⍝ }¨100 Distribute¨ Loot ⍬
 
-font ←⊃Contexts¨ 100 Distribute¨ ⊂⊃Loot ⍬
-input←⊃Contexts¨ 100 EdgePoints¨ ⊂⊃Split Load 'josh.rgb'
-e←.5×+/⍤,⍤2⊢font(×⍨⍤-÷+)⍤2⍤2 3⊢input
+font ←Contexts¨ 50 Distribute¨ Loot ⍬
+input←Contexts¨ 50 EdgePoints¨ Split Load 'josh.rgb'
 
-⍝ O(n*4) algorithm for now: https://en.wikipedia.org/wiki/Hungarian_algorithm#Matrix_formulation
+⍝ greedy matching algorithm
+⎕←cs[(10↑⍋)⍤1⊢input∘.{
+	c←.5×+/⍤,⍤2⊢⍺(×⍨⍤-÷+)⍤2⍤2 3⊢⍵
+	+/{
+		i←(⊢⍳⌊/)c[⍵;]
+		w←c[⍵;i]
+		c/⍨←~(1⊃⍴c)↑⍸⍣¯1,i
+		w
+	}¨⍳≢c
+}font]
+

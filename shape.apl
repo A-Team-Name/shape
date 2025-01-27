@@ -2,6 +2,7 @@
 ⎕PW←12345
 
 'dec' 'disp' 'displays'⎕CY'dfns'
+'assign'⎕CY'dfns'
 cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
 
 Load←{
@@ -157,7 +158,7 @@ Contexts←{
 	(rb tb)←⍺
 	⍝ potential optimisation: only do triangle
 	⍝ TODO: eliminate self
-	d←-⍨⍤0 1⍨⍤1⊢⍵
+	d←-⍨⍤0 1⍨⍤1⊢⍵ ⍝ TODO: this can just be a ∘.-⍨⍤1 no?
 	r←⍟(⊢∨0=⊢).5*⍨+⌿×⍨d
 	t←(12○⊣+0J1×⊢)⌿d ⍝ https://aplcart.info?q=atan2
 	i  ←1+r⍸⍨(⌈/∊r)×(⍳÷   ⊢)rb-1
@@ -176,7 +177,7 @@ EdgePoints←{
 
 	⍝ potential improvement: also check diagonal corners so we have more points
 	⍺←100
-	p←⍉⌽↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
+	p←1 ¯1×⍤0 1⍉⌽↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
 	⍺>1⊃⍴p: p
 	p[;{⍵[⍋⍵]}⍺?1⊃⍴p]
 }
@@ -191,17 +192,28 @@ EdgePoints←{
 ⍝ 	⎕←'plt.show()'
 ⍝ }¨100 Distribute¨ Loot ⍬
 
-font ←Contexts¨ 50 Distribute¨ Loot ⍬
-input←Contexts¨ 50 EdgePoints¨ Split Load 'josh.rgb'
+font ←Contexts¨ 100 Distribute¨ Loot ⍬
+input←Contexts¨ 100 EdgePoints¨ Split Load 'josh.rgb'
 
 ⍝ greedy matching algorithm
-⎕←cs[(10↑⍋)⍤1⊢input∘.{
-	c←.5×+/⍤,⍤2⊢⍺(×⍨⍤-÷+)⍤2⍤2 3⊢⍵
-	+/{
-		i←(⊢⍳⌊/)c[⍵;]
-		w←c[⍵;i]
-		c/⍨←~(1⊃⍴c)↑⍸⍣¯1,i
-		w
-	}¨⍳≢c
-}font]
+⍝ ⎕←⍉'{(+⌿⍵)÷≢⍵}'{⍺,' ',⍵}⍤0 1⊢cs[(10↑⍋)⍤1⊢input∘.{
+⍝ 	c←.5×+/+/⍺(×⍨⍤-÷+)⍤2⍤2 3⊢⍵
+⍝ 	+/{
+⍝ 		i←(⊢⍳⌊/),c
+⍝ 		j←⌊i÷1⊃⍴c
+⍝ 		k←i|⍨1⊃⍴c
+⍝ 		w←c[j;k]
+⍝ 		c⌿⍨←~(0⊃⍴c)↑⍸⍣¯1,j
+⍝ 		c/⍨←~(1⊃⍴c)↑⍸⍣¯1,k
+⍝ 		w
+⍝ 	}¨⍳≢c
+⍝ }font]
+
+⍝ hungarian matching (everyone say thank you John Scholes)
+⎕←⍉'{(+⌿⍵)÷≢⍵}'{⍺,' ',⍵}⍤0 1⊢cs[(10↑⍋)⍤1⊢input∘.{(+/⍤2⊢×assign).5×+/+/⍺(×⍨⍤-÷+)⍤2⍤2 3⊢⍵}font]
+
+⍝ TODO:
+⍝ - [ ] matching visualisations
+⍝ - [ ] consider difference in tangent angle between points
+⍝ - [ ] store contours separately and only allow matchings between shapes with the same number of countours
 

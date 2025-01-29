@@ -193,10 +193,10 @@ EdgePoints←{
 	
 	⍝ assumptions: we can always take a 3×3 window, and loops always close (no single-pixel wide chunks)
 	b←⍵
-	p←⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)       ⍝ all edge points
-	c←⍬                                         ⍝ contours list
-	ci←¯1+0×b                                   ⍝ contours list indices
-	pi←(0 0)(0 1)(0 2)(1 2)(2 2)(2 1)(2 0)(1 0) ⍝ perimeter of the square, TODO: find a fun way to make this
+	p←⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵) ⍝ all edge points
+	c←⍬                  ⍝ contours list
+	ci←¯1+0×b            ⍝ contours list indices
+	pi←2(⊢,¨⌽)1(⊢+⌽)3<⍳8 ⍝ indices of perimeter of the square
 	_←{
 		⍺←{ ⍝ current contour (create if none)
 			a←⍵⌷ci
@@ -232,7 +232,7 @@ EdgePoints←{
 time←¯1 20⎕dt⊂⎕ts
 Log←{⎕←(30↑⍵) (time-⍨¯1 20⎕DT⊂⎕TS)}
 
-npoints←80
+npoints←20
 font         ←Loot ⍬                             ⋄ Log 'done looting'
 input        ←Split Load 'josh.rgb'              ⋄ Log 'done loading and splitting'
 fontData     ←npoints DistributeOverCurves¨ font ⋄ Log 'done distributing font'

@@ -3,7 +3,10 @@
 
 'dec' 'disp' 'displays'⎕CY'dfns'
 'assign'⎕CY'dfns'
+⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
 cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+⍝ cs←'{(+⌿)÷≢⍵}'
+Atan2←12○⊣+0J1×⊢ ⍝ x Atan2 y | https://aplcart.info?q=atan2
 
 Load←{
 	⍝ ⍵: ⍬
@@ -17,21 +20,6 @@ Load←{
 Split←{
 	⍝ ⍵: bitarray to split
 	⍝ ←: list of split bitarrays
-
-	⍝ data ←⍉⍪0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-	⍝ data⍪←  1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
-	⍝ data⍪←  1 0 0 0 0 1 0 0 0 1 1 1 0 0 0 0 0 0
-	⍝ data⍪←  1 0 0 1 1 1 0 0 0 0 0 0 0 1 1 1 1 1
-	⍝ data⍪←  1 0 1 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0
-	⍝ data⍪←  1 1 1 0 1 1 1 1 0 0 0 0 0 0 0 1 0 0
-	⍝ ⎕←' ⌸'[data]
-
-	⍝ data ←⍉⍪0 0 0 0 0
-	⍝ data⍪←  0 1 0 0 0
-	⍝ data⍪←  0 0 0 0 0
-	⍝ data⍪←  1 1 1 1 1
-	⍝ data⍪←  0 0 0 0 0
-	⍝ data⍪←  0 0 0 1 0
 
 	⍝ TODO
 	⍝ - [x] iterate over i,j pairs
@@ -109,7 +97,6 @@ Loot←{
 	(d e x kv t)←↓⍉⎕XML⊃⎕NGET'font/BQN386._c_m_a_p.ttx'
 	p←D2P d
 	(u n)←↓⍉↑⊢/¨kv/⍨p=1⊃⍸p=1
-	⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
 	n←n[cs⍳⍨⎕UCS dec¨u]
 	{
 		(d e x kv t)←↓⍉⎕XML⊃⎕NGET'font/BQN386._g_l_y_f.',⍵,'.ttx'
@@ -132,20 +119,39 @@ Loot←{
 
 Distribute←{
 	⍝ ⍺: number of points to distribute
-	⍝ ⍵: curve set with shape 2 (x y) × 3 (start control end) × n (curves)
-	⍝ ←: points matrix with shape 2 (x y) × ⍺
+	⍝ ⍵: size of bins
+	⍝ ←: ≢⍵ length vector, giving number of points in each bin
+	l←⍵
+	⊃{⍵@⍺⊢0⍴⍨≢l}/↓⍉{⍺,≢⍵}⌸1+(+\l)⍸⍺÷⍨(+/l)×⍳⍺
+}
 
+DistributeOverCurves←{
+	⍝ ⍺: number of points to distribute
+	⍝ ⍵: curve set with shape 2 (x y) × 3 (start control end) × n (curves)
+	⍝ ←: (a b) where
+	⍝    a: points matrix with shape 2 (x y) × ⍺
+	⍝    b: angles vector with shape ⍺
+
+	⍺←100
 	⍝ https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html
 	⍝ for now we do the very simple estimate
-	a←  .5*⍨+⌿×⍨ -⌿⍤2⊢⍵[;2 0;]
-	b←+⌿.5*⍨+⌿×⍨2-⌿⍤2⊢⍵
-	l←a+2×b
-	n←⊃{⍵@⍺⊢0⍴⍨≢l}/↓⍉{⍺,≢⍵}⌸1+(+\l)⍸⍺÷⍨(+/l)×⍳⍺ ⍝ could be a way to do this that uses less space idk
-	t←n+\⍤⍴¨÷n⌈n=0
-	t←↑(1-t) t
-	a←     +⌿⍤2⊢t×⍤2⊢⍵[;0 1;]
-	b←     +⌿⍤2⊢t×⍤2⊢⍵[;1 2;]
-	(⊃,/)⍤1+⌿⍤2⊢t×⍤2⊢1 0 2⍉↑a b
+	a←  .5*⍨+⌿×⍨ -⌿⍤2⊢⍵[;2 0;] ⍝ length start → end
+	b←+⌿.5*⍨+⌿×⍨2-⌿⍤2⊢⍵        ⍝ length start → control → end
+	l←a+2×b                    ⍝ approx length
+	n←⍺ Distribute l           ⍝ number of points on each curve roughly even, could be a way to do this that uses less space idk
+	t←n+\⍤⍴¨÷n⌈n=0             ⍝ timesteps for each curve
+	t←↑(1-t) t                 ⍝ and also complementary timesteps
+	⍝             ┌─a─────────┐  ┌─b─────────┐ (new a and b)
+	⍝ B(t) = (1-t)((1-t)P0+tP1)+t((1-t)P1+tP2)
+	⍝         ┌────────│──┴│──────────│──┘│
+	⍝         │     ┌──┴───┴──────────┴───┘
+	⍝         ├──┐ ┌┴─┐
+	a ←       +⌿⍤2⊢t×⍤2⊢⍵[;0 1;]
+	b ←       +⌿⍤2⊢t×⍤2⊢⍵[;1 2;]
+	xy←(⊃,/)⍤1+⌿⍤2⊢t×⍤2⊢1 0 2⍉↑a b
+	⍝ B'(t) = 2(1-t)(P1-P0)+2t(P2-P1)
+	m←+∘(○0>⊢)⍨Atan2⌿+⌿⍤2(⊃,/)⍤1⊢t×⍤2⊢2×¯2-⌿⍤2⊢⍵ ⍝ normalised to >0
+	xy m
 }
 
 Contexts←{
@@ -160,7 +166,7 @@ Contexts←{
 	⍝ TODO: eliminate self
 	d←-⍨⍤0 1⍨⍤1⊢⍵ ⍝ TODO: this can just be a ∘.-⍨⍤1 no?
 	r←⍟(⊢∨0=⊢).5*⍨+⌿×⍨d
-	t←(12○⊣+0J1×⊢)⌿d ⍝ https://aplcart.info?q=atan2
+	t←Atan2⌿d
 	i  ←1+r⍸⍨(⌈/∊r)×(⍳÷   ⊢)rb-1
 	i,¨←  t⍸⍨○¯1+   (⍳÷.5×⊢)tb
 	{
@@ -171,18 +177,49 @@ Contexts←{
 }
 
 EdgePoints←{
-	⍝ ⍺: maximum number of edgepoints to pick (default 100)
+	⍝ ⍺: number of edgepoints to pick (default 100)
+	⍝    if ⍺ > points in the image, there will be duplicate points
 	⍝ ⍵: bit array to find edgepoints on
-	⍝ ←: 2×_ array of edgepoint coords
+	⍝ ←: (a b) where
+	⍝    a: points matrix with shape 2 (x y) × ⍺⋯)
+	⍝    b: angles vector with shape ⍺
 
-	⍝ potential improvement: also check diagonal corners so we have more points
 	⍺←100
-	p←1 ¯1×⍤0 1⍉⌽↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
-	⍺>1⊃⍴p: p
-	p[;{⍵[⍋⍵]}⍺?1⊃⍴p]
-}
 
-⍝ ⎕←displays Contexts ↑(¯1 0 1 ¯1 0 1 ¯1 0 1)(1 1 1 0 0 0 ¯1 ¯1 ¯1)
+	⍝ ⍝ potential improvement: also check diagonal corners so we have more points
+	⍝ p←1 ¯1×⍤0 1⍉⌽↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
+	⍝ ⍺>1⊃⍴p: p
+	⍝ p[;{⍵[⍋⍵]}⍺?1⊃⍴p]
+	
+	⍝ assumptions: we can always take a 3×3 window, and loops always close (no single-pixel wide chunks)
+	b←⍵
+	p←⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)       ⍝ all edge points
+	c←⍬                                         ⍝ contours list
+	ci←¯1+0×b                                   ⍝ contours list indices
+	pi←(0 0)(0 1)(0 2)(1 2)(2 2)(2 1)(2 0)(1 0) ⍝ perimeter of the square, TODO: find a fun way to make this
+	_←{
+		⍺←{ ⍝ current contour (create if none)
+			a←⍵⌷ci
+			a≠¯1: a
+			c,←⊂2 0⍴⍬
+			¯1+≢c
+		}⍵
+		(⍺⊃c),←⍪⍵
+		(i j)←⍵
+		ci[i;j]←⍺
+		(i j)←⍵+¯1+pi⊃⍨8|1+⊃⍸2</9⍴b[¯1 0 1+i;¯1 0 1+j][pi] ⍝ indices of the next point
+		ci[i;j]≠¯1: ⍺ ⍝ loop complete
+		⍺∇i j         ⍝ continue on next point around the curve, tco babyy
+	}¨p
+	c←c{⍺[;⌊.5+⍵÷⍨(1⊃⍴⍺)×⍳⍵]}¨⍺ Distribute (1⊃⍴)¨c ⍝ pick points from contour
+	c←{1 ¯1×⍤0 1⊖⍵}¨c ⍝ i j → x y
+	m←{
+		n←1⊃⍴⍵
+		n<3: n⍴0 ⍝ not enough points to get gradients
+		+∘(○0>⊢)⍨Atan2⌿-/⍵[;n|(⍳n)∘.+¯1 1]
+	}¨c
+	(⊃,/)¨c m
+}
 
 ⍝ ⎕←'import matplotlib.pyplot as plt'
 ⍝ {
@@ -190,30 +227,46 @@ EdgePoints←{
 ⍝ 	⎕←'[0-9-,.]+'⎕R'[&],'⊢⍵⎕CSV⊂''
 ⍝ 	⎕←')'
 ⍝ 	⎕←'plt.show()'
-⍝ }¨100 Distribute¨ Loot ⍬
+⍝ }¨100 DistributeOverCurves¨ Loot ⍬
 
-font ←Contexts¨ 100 Distribute¨ Loot ⍬
-input←Contexts¨ 100 EdgePoints¨ Split Load 'josh.rgb'
+time←¯1 20⎕dt⊂⎕ts
+Log←{⎕←(30↑⍵) (time-⍨¯1 20⎕DT⊂⎕TS)}
 
-⍝ greedy matching algorithm
-⍝ ⎕←⍉'{(+⌿⍵)÷≢⍵}'{⍺,' ',⍵}⍤0 1⊢cs[(10↑⍋)⍤1⊢input∘.{
-⍝ 	c←.5×+/+/⍺(×⍨⍤-÷+)⍤2⍤2 3⊢⍵
-⍝ 	+/{
-⍝ 		i←(⊢⍳⌊/),c
-⍝ 		j←⌊i÷1⊃⍴c
-⍝ 		k←i|⍨1⊃⍴c
-⍝ 		w←c[j;k]
-⍝ 		c⌿⍨←~(0⊃⍴c)↑⍸⍣¯1,j
-⍝ 		c/⍨←~(1⊃⍴c)↑⍸⍣¯1,k
-⍝ 		w
-⍝ 	}¨⍳≢c
-⍝ }font]
+npoints←80
+font         ←Loot ⍬                             ⋄ Log 'done looting'
+input        ←Split Load 'josh.rgb'              ⋄ Log 'done loading and splitting'
+fontData     ←npoints DistributeOverCurves¨ font ⋄ Log 'done distributing font'
+inputData    ←npoints EdgePoints¨ input          ⋄ Log 'done distributing input'
 
-⍝ hungarian matching (everyone say thank you John Scholes)
-⎕←⍉'{(+⌿⍵)÷≢⍵}'{⍺,' ',⍵}⍤0 1⊢cs[(10↑⍋)⍤1⊢input∘.{(+/⍤2⊢×assign).5×+/+/⍺(×⍨⍤-÷+)⍤2⍤2 3⊢⍵}font]
+contextCosts←inputData∘.{.5×+/+/⍺(×⍨⍤-÷+)⍤2⍤2 3⊢⍵}⍥(Contexts⍤⊃¨)fontData ⋄ Log 'done contexts matricies'
+angleCosts  ←inputData(∘.(|∘.-))⍥(1∘⊃¨)fontData ⋄ Log 'done angles matricies'
+
+⍝ ⎕←⎕SIZE contextCosts
+⍝ ⎕←⎕SIZE angleCosts
+⍝ ⎕←⎕WA
+costs←contextCosts+angleCosts ⋄ Log 'done total cost matrices'
+
+matchingCosts←{
+	c←⍵
+	⍝ +/+/c×assign c ⍝ everybody say thank you John Scholes
+	⍝ greedy matching (sacrifice accuracy for speed)
+	+/{
+		i←(⊢⍳⌊/),c
+		j←⌊i÷1⊃⍴c
+		k←i|⍨1⊃⍴c
+		w←c[j;k]
+		c⌿⍨←~(0⊃⍴c)↑⍸⍣¯1,j
+		c/⍨←~(1⊃⍴c)↑⍸⍣¯1,k
+		w
+	}¨⍳≢c
+}¨costs
+Log 'done matching'
+
+⎕←⍉(⍪'{(+⌿⍵)÷≢⍵}'),' ',cs[(10↑⍋)⍤1⊢matchingCosts]
 
 ⍝ TODO:
 ⍝ - [ ] matching visualisations
-⍝ - [ ] consider difference in tangent angle between points
-⍝ - [ ] store contours separately and only allow matchings between shapes with the same number of countours
+⍝ - [x] consider difference in tangent angle between points
+⍝ - [ ] do some more precise distance normalisation
+⍝ - [ ] improve distribution of points over bezier curve
 

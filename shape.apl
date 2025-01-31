@@ -241,8 +241,10 @@ input        ←Split Load 'josh.rgb'              ⋄ Log 'done loading and spl
 fontData     ←npoints DistributeOverCurves¨ font ⋄ Log 'done distributing font'
 inputData    ←npoints EdgePoints¨ input          ⋄ Log 'done distributing input'
 
-⍝ (×⍨⍤-÷+)⍤2⍤2 3
-contextCosts←inputData∘.{.5×+/+/⍺((⊣⍴⍨≢⍤⊢,⍴⍤⊣)(×⍨⍤-÷+)⊢)⍤2 3⊢⍵}⍥(5 20∘Contexts⍤⊃¨)fontData ⋄ Log 'done contexts matricies'
+contextCosts←inputData∘.{
+	sh←2 1 1/⍴⍵
+	.5×+/+/(1 0 2 3⍉sh⍴⍺)(×⍨⍤-÷+)sh⍴⍵
+}⍥(5 20∘Contexts⍤⊃¨)fontData ⋄ Log 'done contexts matricies'
 angleCosts  ←inputData(∘.(|∘.-))⍥(1∘⊃¨)fontData ⋄ Log 'done angles matricies'
 
 ⍝ ⎕←⎕SIZE contextCosts

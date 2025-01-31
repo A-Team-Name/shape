@@ -5,14 +5,16 @@
 'assign'⎕CY'dfns'
 ⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
 cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-⍝ cs←'{(+⌿)÷≢⍵}'
+⍝ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
 Atan2←12○⊣+0J1×⊢ ⍝ x Atan2 y | https://aplcart.info?q=atan2
 
 Load←{
 	⍝ ⍵: ⍬
 	⍝ ←: bitarray
 	tie←⍵ ⎕NTIE 0
-	data←¯1≠(124 877 3⍴⎕NREAD tie 83 ¯1)[;;0]
+	⍝ 124 877 josh.rgb
+	⍝ 66 236  lambda.rgb
+	data←¯1≠(124 877 3⍴⎕NREAD tie 83 ¯1)[;;1]
 	_←⎕NUNTIE tie
 	data
 }
@@ -152,6 +154,7 @@ DistributeOverCurves←{
 	⍝ B'(t) = 2(1-t)(P1-P0)+2t(P2-P1)
 	m←+∘(○0>⊢)⍨Atan2⌿+⌿⍤2(⊃,/)⍤1⊢t×⍤2⊢2×¯2-⌿⍤2⊢⍵ ⍝ normalised to >0
 	xy m
+	1+2+3+4
 }
 
 Contexts←{
@@ -232,13 +235,14 @@ EdgePoints←{
 time←¯1 20⎕dt⊂⎕ts
 Log←{⎕←(30↑⍵) (time-⍨¯1 20⎕DT⊂⎕TS)}
 
-npoints←20
+npoints←80
 font         ←Loot ⍬                             ⋄ Log 'done looting'
 input        ←Split Load 'josh.rgb'              ⋄ Log 'done loading and splitting'
 fontData     ←npoints DistributeOverCurves¨ font ⋄ Log 'done distributing font'
 inputData    ←npoints EdgePoints¨ input          ⋄ Log 'done distributing input'
 
-contextCosts←inputData∘.{.5×+/+/⍺(×⍨⍤-÷+)⍤2⍤2 3⊢⍵}⍥(Contexts⍤⊃¨)fontData ⋄ Log 'done contexts matricies'
+⍝ (×⍨⍤-÷+)⍤2⍤2 3
+contextCosts←inputData∘.{.5×+/+/⍺((⊣⍴⍨≢⍤⊢,⍴⍤⊣)(×⍨⍤-÷+)⊢)⍤2 3⊢⍵}⍥(5 20∘Contexts⍤⊃¨)fontData ⋄ Log 'done contexts matricies'
 angleCosts  ←inputData(∘.(|∘.-))⍥(1∘⊃¨)fontData ⋄ Log 'done angles matricies'
 
 ⍝ ⎕←⎕SIZE contextCosts
@@ -262,7 +266,8 @@ matchingCosts←{
 }¨costs
 Log 'done matching'
 
-⎕←⍉(⍪'{(+⌿⍵)÷≢⍵}'),' ',cs[(10↑⍋)⍤1⊢matchingCosts]
+⍝ (⍪'{(+⌿⍵)÷≢⍵}'),' ',
+⎕←⍉cs[(10↑⍋)⍤1⊢matchingCosts]
 
 ⍝ TODO:
 ⍝ - [ ] matching visualisations

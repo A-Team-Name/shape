@@ -4,17 +4,19 @@
 'dec' 'disp' 'displays'⎕CY'dfns'
 'assign'⎕CY'dfns'
 ⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
-cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-⍝ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
+⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+cs←'λ.()abcdefghijklmnopqrstuvwxyz'
 Atan2←12○⊣+0J1×⊢ ⍝ x Atan2 y | https://aplcart.info?q=atan2
 
 Load←{
 	⍝ ⍵: ⍬
 	⍝ ←: bitarray
 	tie←⍵ ⎕NTIE 0
-	⍝ 124 877 josh.rgb
-	⍝ 66 236  lambda.rgb
-	data←¯1≠(124 877 3⍴⎕NREAD tie 83 ¯1)[;;1]
+	⍝ 124 877  josh.rgb
+	⍝ 66 236   lambda.png
+	⍝ 200 800  hand-lambda.png
+	⍝ 247 426  leon-lambda.png
+	data←¯1≠(247 426 3⍴⎕NREAD tie 83 ¯1)[;;1]
 	_←⎕NUNTIE tie
 	data
 }
@@ -130,9 +132,10 @@ Distribute←{
 DistributeOverCurves←{
 	⍝ ⍺: number of points to distribute
 	⍝ ⍵: curve set with shape 2 (x y) × 3 (start control end) × n (curves)
-	⍝ ←: (a b) where
+	⍝ ←: (a b c) where
 	⍝    a: points matrix with shape 2 (x y) × ⍺
 	⍝    b: angles vector with shape ⍺
+	⍝    c: number of contours
 
 	⍺←100
 	⍝ https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html
@@ -153,8 +156,7 @@ DistributeOverCurves←{
 	xy←(⊃,/)⍤1+⌿⍤2⊢t×⍤2⊢1 0 2⍉↑a b
 	⍝ B'(t) = 2(1-t)(P1-P0)+2t(P2-P1)
 	m←+∘(○0>⊢)⍨Atan2⌿+⌿⍤2(⊃,/)⍤1⊢t×⍤2⊢2×¯2-⌿⍤2⊢⍵ ⍝ normalised to >0
-	xy m
-	1+2+3+4
+	xy m (2⊃⍴⍵)
 }
 
 Contexts←{
@@ -183,9 +185,10 @@ EdgePoints←{
 	⍝ ⍺: number of edgepoints to pick (default 100)
 	⍝    if ⍺ > points in the image, there will be duplicate points
 	⍝ ⍵: bit array to find edgepoints on
-	⍝ ←: (a b) where
+	⍝ ←: (a b c) where
 	⍝    a: points matrix with shape 2 (x y) × ⍺⋯)
 	⍝    b: angles vector with shape ⍺
+	⍝    c: number of contours
 
 	⍺←100
 
@@ -221,7 +224,7 @@ EdgePoints←{
 		n<3: n⍴0 ⍝ not enough points to get gradients
 		+∘(○0>⊢)⍨Atan2⌿-/⍵[;n|(⍳n)∘.+¯1 1]
 	}¨c
-	(⊃,/)¨c m
+	(⊃,/c) (⊃,/m) (≢c)
 }
 
 ⍝ ⎕←'import matplotlib.pyplot as plt'
@@ -235,25 +238,17 @@ EdgePoints←{
 time←¯1 20⎕dt⊂⎕ts
 Log←{⎕←(30↑⍵) (time-⍨¯1 20⎕DT⊂⎕TS)}
 
-npoints←80
-font         ←Loot ⍬                             ⋄ Log 'done looting'
-input        ←Split Load 'josh.rgb'              ⋄ Log 'done loading and splitting'
-fontData     ←npoints DistributeOverCurves¨ font ⋄ Log 'done distributing font'
-inputData    ←npoints EdgePoints¨ input          ⋄ Log 'done distributing input'
-
-contextCosts←inputData∘.{
-	sh←2 1 1/⍴⍵
-	.5×+/+/(1 0 2 3⍉sh⍴⍺)(×⍨⍤-÷+)sh⍴⍵
-}⍥(5 20∘Contexts⍤⊃¨)fontData ⋄ Log 'done contexts matricies'
-angleCosts  ←inputData(∘.(|∘.-))⍥(1∘⊃¨)fontData ⋄ Log 'done angles matricies'
-
-⍝ ⎕←⎕SIZE contextCosts
-⍝ ⎕←⎕SIZE angleCosts
-⍝ ⎕←⎕WA
-costs←contextCosts+angleCosts ⋄ Log 'done total cost matrices'
-
-matchingCosts←{
-	c←⍵
+npoints←100
+bins←5 12
+sh←npoints,npoints,bins
+font ←npoints DistributeOverCurves¨ Loot ⍬
+input←npoints EdgePoints¨           Split Load 'leon-lambda.rgb'
+Log 'done getting points'
+Cost←{
+	⍞←'*'
+	contexts←⍺{.5×+/+/(1 0 2 3⍉sh⍴⍺)(×⍨⍤-÷+)sh⍴⍵}⍥(bins∘Contexts⊃)⍵
+	angles←|⍺∘.-⍥(1∘⊃)⍵
+	c←0.9 0.1(⊃+.×)(⊢÷⌈/⍣2)¨contexts angles
 	⍝ +/+/c×assign c ⍝ everybody say thank you John Scholes
 	⍝ greedy matching (sacrifice accuracy for speed)
 	+/{
@@ -265,15 +260,20 @@ matchingCosts←{
 		c/⍨←~(1⊃⍴c)↑⍸⍣¯1,k
 		w
 	}¨⍳≢c
-}¨costs
+}
+⍝ cost←.1 .9(⊃+.×)(⊢÷⌈/⍣2)¨(|input∘.-⍥(2∘⊃¨)font)(input ∘.Cost font)
+cost←input ∘.Cost font
 Log 'done matching'
 
 ⍝ (⍪'{(+⌿⍵)÷≢⍵}'),' ',
-⎕←⍉cs[(10↑⍋)⍤1⊢matchingCosts]
+⎕←⍉cs[(10↑⍋)⍤1⊢cost]
 
 ⍝ TODO:
 ⍝ - [ ] matching visualisations
 ⍝ - [x] consider difference in tangent angle between points
-⍝ - [ ] do some more precise distance normalisation
+⍝ - [x] normalisation and weighting
 ⍝ - [ ] improve distribution of points over bezier curve
+⍝ - [ ] look at thin plate spline shit
+⍝ - [ ] lambda calc tests
+⍝ - [ ] more accurate angles from edgepoints (least squares)
 

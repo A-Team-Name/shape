@@ -11,6 +11,7 @@ def split(image):
     # see https://en.wikipedia.org/wiki/Disjoint-set_data_structure
     # union just prioritises the left parent over the top one, no union by rank/size business
     # also no path splitting/merging
+
     # parent matrix with shape: height × width × 2 (parent row, parent column)
     p = np.zeros(
         (h, w, 2),

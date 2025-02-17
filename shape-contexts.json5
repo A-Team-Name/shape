@@ -1,0 +1,24 @@
+// {
+//     size: [h, w],
+//     path: 'my-image.gray' // single, 8-bit channel
+// }
+
+// {
+//     size: [124, 877],
+//     path: "josh.gray",
+// }
+
+// {
+//     size: [66, 236],
+//     path: 'lambda.gray',
+// }
+
+{
+    size: [200, 800],
+    path: 'hand-lambda.gray',
+}
+
+// {
+//     size: [247, 426],
+//     path: 'leon-lambda.gray',
+// }

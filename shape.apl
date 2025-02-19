@@ -14,7 +14,7 @@ Load←{
 	⍝ ⍵: ⍬
 	⍝ ←: bitarray
 	tie←⍵ ⎕NTIE 0
-	data←¯1≠(input.size⍴⎕NREAD tie 83 ¯1)
+	data←0≤(input.size⍴⎕NREAD tie 83 ¯1)
 	_←⎕NUNTIE tie
 	data
 }
@@ -240,6 +240,8 @@ npoints←100
 bins←5 12
 sh←npoints,npoints,bins
 font ←npoints DistributeOverCurves¨ Loot ⍬
+⍝ ⎕←Load input.path
+⍝ ⎕off
 input←npoints EdgePoints¨           Split Load input.path
 ⍝ Log 'done getting points'
 Cost←{

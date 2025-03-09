@@ -3,9 +3,11 @@
 
 'dec' 'disp' 'displays'⎕CY'dfns'
 'assign'⎕CY'dfns'
+
 ⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
 ⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-cs←'λ.()abcdefghijklmnopqrstuvwxyz'
+⍝ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
+cs←'λ.()fx'
 Atan2←12○⊣+0J1×⊢ ⍝ x Atan2 y | https://aplcart.info?q=atan2
 
 input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5'
@@ -243,21 +245,47 @@ font ←npoints DistributeOverCurves¨ Loot ⍬
 input←npoints EdgePoints¨           Split Load input.path
 ⍝ Log 'done getting points'
 Cost←{
-	⍝ ⍞←'*'
-	contexts←⍺{.5×+/+/(1 0 2 3⍉sh⍴⍺)(×⍨⍤-÷+)sh⍴⍵}⍥(bins∘Contexts⊃)⍵
-	angles←|⍺∘.-⍥(1∘⊃)⍵
-	c←0.9 0.1(⊃+.×)(⊢÷⌈/⍣2)¨contexts angles
+	p←⍺
+	q←⍵
+	contexts←p{.5×+/+/(1 0 2 3⍉sh⍴⍺)(×⍨⍤-÷+)sh⍴⍵}⍥(bins∘Contexts⊃)q
+	angles←|p∘.-⍥(1∘⊃)q ⍝ TODO: better notion of angle distance from wikipedia
+	c←0.9 0.1(⊃+.×)(⊢÷⌈/⍣2)¨contexts angles ⍝ weighted sum of angles and contexts
+
+	(jj kk)←⍳¨⍴c
+	m ←¯1⍴⍨≢c ⍝ the matching
+	wm←¯1⍴⍨≢c ⍝ matching weights
+
+	⍝ costs of matching points
 	⍝ +/+/c×assign c ⍝ everybody say thank you John Scholes
 	⍝ greedy matching (sacrifice accuracy for speed)
-	+/{
+	ws←{
 		i←(⊢⍳⌊/),c
 		j←⌊i÷1⊃⍴c
 		k←i|⍨1⊃⍴c
 		w←c[j;k]
-		c⌿⍨←~(0⊃⍴c)↑⍸⍣¯1,j
-		c/⍨←~(1⊃⍴c)↑⍸⍣¯1,k
+		 m[jj[j]]←kk[k]
+		wm[jj[j]]←w
+		m←~(0⊃⍴c)↑⍸⍣¯1,j ⍝ new m: mask
+		c ⌿⍨←m
+		jj/⍨←m
+		m←~(1⊃⍴c)↑⍸⍣¯1,k
+		c /⍨←m
+		kk/⍨←m
 		w
 	}¨⍳≢c
+
+	⍝ visualising matchings
+	(⊃p)-⍤1 0←⌊/⊃p
+	(⊃p)÷⍤1 0←⌈/⊃p
+	(⊃q)-⍤1 0←⌊/⊃q
+	(⊃q)÷⍤1 0←⌈/⊃q
+	wm÷←⌈/wm
+	py←'import matplotlib.pyplot as plt;'
+	_←{py,←'¯'⎕R'-'⊢'plt.plot([',(⍕(⊃p)[0;⍵]),',',(⍕(⊃q)[0;m[⍵]]),'], [',(⍕(⊃p)[1;⍵]),',',(⍕(⊃q)[1;m[⍵]]),'], "o-", c = (',(⍕1-x),', 0, ',(⍕x←1-wm[⍵]),'));'}¨⍳≢m
+	py,←'plt.show()'
+	⎕SH 'python3 -c ''',py,''''
+
+	+/ws
 }
 ⍝ cost←.1 .9(⊃+.×)(⊢÷⌈/⍣2)¨(|input∘.-⍥(2∘⊃¨)font)(input ∘.Cost font)
 cost←input ∘.Cost font
@@ -267,11 +295,12 @@ cost←input ∘.Cost font
 ⎕←⍉cs[(10↑⍋)⍤1⊢cost]
 
 ⍝ TODO:
-⍝ - [ ] matching visualisations
+⍝ - [x] matching visualisations
 ⍝ - [x] consider difference in tangent angle between points
 ⍝ - [x] normalisation and weighting
 ⍝ - [ ] improve distribution of points over bezier curve
 ⍝ - [ ] look at thin plate spline shit
 ⍝ - [ ] lambda calc tests
-⍝ - [ ] more accurate angles from edgepoints (least squares)
+⍝ - [ ] more accurate angles from edgepoints (least squares?)
+⍝ - [ ] draw from more fonts
 

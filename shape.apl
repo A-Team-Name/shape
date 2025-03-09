@@ -6,8 +6,8 @@
 
 ⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
 ⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-⍝ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
-cs←'λ.()fx'
+cs←'λ.()abcdefghijklmnopqrstuvwxyz'
+⍝ cs←'λ.()fx'
 Atan2←12○⊣+0J1×⊢ ⍝ x Atan2 y | https://aplcart.info?q=atan2
 
 input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5'
@@ -227,23 +227,42 @@ EdgePoints←{
 	(⊃,/c) (⊃,/m) (≢c)
 }
 
-⍝ ⎕←'import matplotlib.pyplot as plt'
-⍝ {
-⍝ 	⎕←'plt.scatter('
-⍝ 	⎕←'[0-9-,.]+'⎕R'[&],'⊢⍵⎕CSV⊂''
-⍝ 	⎕←')'
-⍝ 	⎕←'plt.show()'
-⍝ }¨100 DistributeOverCurves¨ Loot ⍬
-
+⍝ scuffed logging
 time←¯1 20⎕dt⊂⎕ts
 Log←{⎕←(30↑⍵) (time-⍨¯1 20⎕DT⊂⎕TS)}
 
 npoints←100
 bins←5 12
+
+⍝ (coords bearings ncontours) for each glyph
+ fontPoints←npoints DistributeOverCurves¨ Loot ⍬
+inputPoints←npoints EdgePoints¨           Split Load input.path
+
+⍝ (nglyphs npoints bins[0] bins[1])
+ fontContexts←(Contexts⍤⊃⍤⊃)⍤0⊢ fontPoints
+inputContexts←(Contexts⍤⊃⍤⊃)⍤0⊢inputPoints
+
+nig←≢inputContexts
+nr←10
+np←npoints
+⍝ representative contexts for each input shape
+reps←inputContexts[;nreps?npoints;;]
+
+⍝ high-rank fuckery to get all the costs right
+sh←⍴reps
+bigReps ←(≢fontContexts)⌿⍤5⊢npoints⌿⍤3⊢reps        ⍴⍨sh[0],1,sh[1],1,sh[2 3]
+sh←⍴fontContexts
+bigFonts←(≢reps)        ⌿⍤6⊢nreps  ⌿⍤4⊢fontContexts⍴⍨1,sh[0],1,sh[1 2 3]
+
+c←.5×+/+/bigReps(×⍨⍤-÷+)bigFonts ⍝ (ninputglyphs nfontglyphs nreps npoint) matching costs
+c←{⍵[(⌊nreps÷2)↑⍋⌊/⍵;]}⍤2⊢c      ⍝ filter to G_i (top 50% best representatives)
+d←⌊/c                            ⍝ d_GSC
+nu←(≢fontContexts)÷⍨+⌿⍤2⊢d       ⍝ normalisation factor N_u
+
+
+⎕off
+
 sh←npoints,npoints,bins
-font ←npoints DistributeOverCurves¨ Loot ⍬
-input←npoints EdgePoints¨           Split Load input.path
-⍝ Log 'done getting points'
 Cost←{
 	p←⍺
 	q←⍵
@@ -281,7 +300,7 @@ Cost←{
 	(⊃q)÷⍤1 0←⌈/⊃q
 	wm÷←⌈/wm
 	py←'import matplotlib.pyplot as plt;'
-	_←{py,←'¯'⎕R'-'⊢'plt.plot([',(⍕(⊃p)[0;⍵]),',',(⍕(⊃q)[0;m[⍵]]),'], [',(⍕(⊃p)[1;⍵]),',',(⍕(⊃q)[1;m[⍵]]),'], "o-", c = (',(⍕1-x),', 0, ',(⍕x←1-wm[⍵]),'));'}¨⍳≢m
+	_←{py,←'¯'⎕R'-'⊢'plt.plot([',(⍕(⊃p)[0;⍵]),',',(⍕(⊃q)[0;m[⍵]]),'], [',(⍕(⊃p)[1;⍵]),',',(⍕(⊃q)[1;m[⍵]]),'], "o-", c = (',(⍕wm[⍵]),', 0, ',(⍕1-wm[⍵]),'));'}¨⍳≢m
 	py,←'plt.show()'
 	⎕SH 'python3 -c ''',py,''''
 
@@ -298,9 +317,15 @@ cost←input ∘.Cost font
 ⍝ - [x] matching visualisations
 ⍝ - [x] consider difference in tangent angle between points
 ⍝ - [x] normalisation and weighting
+⍝ - [ ] fast pruning with representative contexts
+⍝ - [ ] gsc: tangent in bins
+⍝ - [ ] basic thin-plate splines
+
+⍝ - [ ] regularised tps
 ⍝ - [ ] improve distribution of points over bezier curve
-⍝ - [ ] look at thin plate spline shit
 ⍝ - [ ] lambda calc tests
 ⍝ - [ ] more accurate angles from edgepoints (least squares?)
 ⍝ - [ ] draw from more fonts
+⍝ - [ ] fast pruning with shapemes??
+⍝ - [ ] gaussian windows
 

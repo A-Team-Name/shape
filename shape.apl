@@ -239,26 +239,28 @@ bins←5 12
 inputPoints←npoints EdgePoints¨           Split Load input.path
 
 ⍝ (nglyphs npoints bins[0] bins[1])
- fontContexts←(Contexts⍤⊃⍤⊃)⍤0⊢ fontPoints
-inputContexts←(Contexts⍤⊃⍤⊃)⍤0⊢inputPoints
+ font←(Contexts⍤⊃⍤⊃)⍤0⊢ fontPoints
+input←(Contexts⍤⊃⍤⊃)⍤0⊢inputPoints
 
-nig←≢inputContexts
+nig←≢input
 nr←10
 np←npoints
 ⍝ representative contexts for each input shape
-reps←inputContexts[;nreps?npoints;;]
+⍝ TODO: only compute the ones we need
+reps←input[;nr?np;;]
 
-⍝ high-rank fuckery to get all the costs right
-sh←⍴reps
-bigReps ←(≢fontContexts)⌿⍤5⊢npoints⌿⍤3⊢reps        ⍴⍨sh[0],1,sh[1],1,sh[2 3]
-sh←⍴fontContexts
-bigFonts←(≢reps)        ⌿⍤6⊢nreps  ⌿⍤4⊢fontContexts⍴⍨1,sh[0],1,sh[1 2 3]
+⍝ expand the contexts to shape (ninputglyphs nfontglyphs nreps npoints bins[0] bins[1])
+⍝                                    └─────┬───┐ ┌─┴─┐ ┌───┤ ┌─┴─┐ ┌───┴─┬───────────┘ 
+sh←⍴reps ⋄ bigReps ←(≢font)⌿⍤5⊢np⌿⍤3⊢reps⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
+sh←⍴font ⋄ bigFonts←(≢reps)⌿⍤6⊢nr⌿⍤4⊢font⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
 
-c←.5×+/+/bigReps(×⍨⍤-÷+)bigFonts ⍝ (ninputglyphs nfontglyphs nreps npoint) matching costs
-c←{⍵[(⌊nreps÷2)↑⍋⌊/⍵;]}⍤2⊢c      ⍝ filter to G_i (top 50% best representatives)
-d←⌊/c                            ⍝ d_GSC
-nu←(≢fontContexts)÷⍨+⌿⍤2⊢d       ⍝ normalisation factor N_u
-
+c  ←.5×+/+/bigReps(×⍨⍤-÷+)bigFonts ⍝ (ninputglyphs nfontglyphs nreps npoints) matching costs (regular shape contexts)
+d  ←⌊/c                            ⍝ (ninputglyphs nfontglyphs nreps)         smallest d_GSC
+nu ←(≢font)÷⍨+⌿⍤2⊢d                ⍝ (ninputglyphs nreps)                     normalisation factor N_u
+d ÷←(≢font)⌿⍤2⊢nu⍴⍨(≢reps),1 nr    ⍝ (ninputglyphs nfontglyphs nreps)         normalised distances
+k  ←⌊nr÷2                          ⍝                                          number of RSCs to consider
+d  ←k÷⍨+/{⍵[k↑⍋⍵]}⍤1⊢d             ⍝ (ninputglyphs nfontglyphs)               representative distances between inputs and fonts
+i  ←(10↑⍋)⍤1⊢d                     ⍝ (ninputglyphs x)                         shortlists for each input glyph
 
 ⎕off
 
@@ -317,7 +319,7 @@ cost←input ∘.Cost font
 ⍝ - [x] matching visualisations
 ⍝ - [x] consider difference in tangent angle between points
 ⍝ - [x] normalisation and weighting
-⍝ - [ ] fast pruning with representative contexts
+⍝ - [x] fast pruning with representative contexts
 ⍝ - [ ] gsc: tangent in bins
 ⍝ - [ ] basic thin-plate splines
 

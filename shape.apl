@@ -162,18 +162,19 @@ Contexts←{
 
 	⍺←5 12
 	(rb tb)←⍺
-	⍝ potential optimisation: only do triangle
-	⍝ TODO: eliminate self
-	d←-⍨⍤0 1⍨⍤1⊢⍵ ⍝ TODO: this can just be a ∘.-⍨⍤1 no?
-	r←⍟(⊢∨0=⊢).5*⍨+⌿×⍨d
-	t←Atan2⌿d
-	i  ←1+r⍸⍨(⌈/∊r)×(⍳÷   ⊢)rb-1
-	i,¨←  t⍸⍨○¯1+   (⍳÷.5×⊢)tb
-	{
+	d←∘.-⍨⍤1⊢⍵                           ⍝ x-x and y-y differences
+	r←↓.5*⍨+⌿×⍨d                         ⍝ distances
+	m←r>0                                ⍝ mask(s) of points that are different
+	r←⍟m/¨r                              ⍝ filter r
+	t←m/¨↓Atan2⌿d                        ⍝ angles (filtered)
+	(max min)←(⌈/,⌊/)∊r
+	i   ←r⍸⍨¨⊂min+(max-min)×(⍳÷   ⊢)rb-1 ⍝ bin distances
+	i,¨¨←t⍸⍨¨⊂○¯1+          (⍳÷.5×⊢)tb   ⍝ bin angles
+	↑{
 		h←rb tb⍴0
 		h[⍵]+←1
 		h
-	}⍤1⊢i
+	}¨i
 }
 
 EdgePoints←{
@@ -346,10 +347,11 @@ cost←input ∘.Cost font
 ⍝ - [x] normalisation and weighting
 ⍝ - [x] fast pruning with representative contexts
 ⍝ - [x] round it out
+⍝ - [x] nested matching cost calculations for less wsfulls
+⍝ - [ ] gsc: tangent in bins
 ⍝ - [ ] lambda calc tests
 ⍝ - [ ] apl tests
 
-⍝ - [ ] gsc: tangent in bins
 ⍝ - [ ] basic thin-plate splines
 ⍝ - [ ] regularised tps
 ⍝ - [ ] improve distribution of points over bezier curve

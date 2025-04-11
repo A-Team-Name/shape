@@ -127,10 +127,9 @@ Distribute←{
 DistributeOverCurves←{
 	⍝ ⍺: number of points to distribute
 	⍝ ⍵: curve set with shape 2 (x y) × 3 (start control end) × n (curves)
-	⍝ ←: (a b c) where
+	⍝ ←: (a b) where
 	⍝    a: points matrix with shape 2 (x y) × ⍺
 	⍝    b: angles vector with shape ⍺
-	⍝    c: number of contours
 
 	⍺←100
 	⍝ https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html
@@ -151,25 +150,28 @@ DistributeOverCurves←{
 	xy←(⊃,/)⍤1+⌿⍤2⊢t×⍤2⊢1 0 2⍉↑a b
 	⍝ B'(t) = 2(1-t)(P1-P0)+2t(P2-P1)
 	m←+∘(○0>⊢)⍨Atan2⌿+⌿⍤2(⊃,/)⍤1⊢t×⍤2⊢2×¯2-⌿⍤2⊢⍵ ⍝ normalised to >0
-	xy m (2⊃⍴⍵)
+	xy m
 }
 
 Contexts←{
 	⍝ ⍺[0]: number of distance bins
 	⍝ ⍺[1]: number of angle bins
-	⍝ ⍵: points matrix with shape 2 (x y) × n
+	⍝ ⍵: (a b) where
+	⍝    a: points matrix with shape 2 (x y) × n
+	⍝    b: angles vector with shape n
 	⍝ ←: n×⍺[0]×⍺[1] array of shape contexts
 
 	⍺←5 12
 	(rb tb)←⍺
-	d←∘.-⍨⍤1⊢⍵                           ⍝ x-x and y-y differences
+	(xy a) ←⍵
+	d←∘.-⍨⍤1⊢xy                          ⍝ x-x and y-y differences
 	r←↓.5*⍨+⌿×⍨d                         ⍝ distances
 	m←r>0                                ⍝ mask(s) of points that are different
 	r←⍟m/¨r                              ⍝ filter r
 	t←m/¨↓Atan2⌿d                        ⍝ angles (filtered)
 	(max min)←(⌈/,⌊/)∊r
 	i   ←r⍸⍨¨⊂min+(max-min)×(⍳÷   ⊢)rb-1 ⍝ bin distances
-	i,¨¨←t⍸⍨¨⊂○¯1+          (⍳÷.5×⊢)tb   ⍝ bin angles
+	i,¨¨←t⍸⍨¨⊂          ○¯1+(⍳÷.5×⊢)tb   ⍝ bin angles
 	↑{
 		h←rb tb⍴0
 		h[⍵]+←1
@@ -181,14 +183,12 @@ EdgePoints←{
 	⍝ ⍺: number of edgepoints to pick (default 100)
 	⍝    if ⍺ > points in the image, there will be duplicate points
 	⍝ ⍵: bit array to find edgepoints on
-	⍝ ←: (a b c) where
+	⍝ ←: (a b) where
 	⍝    a: points matrix with shape 2 (x y) × ⍺⋯)
 	⍝    b: angles vector with shape ⍺
-	⍝    c: number of contours
 
 	⍺←100
 
-	⍝ ⍝ potential improvement: also check diagonal corners so we have more points
 	⍝ p←1 ¯1×⍤0 1⍉⌽↑⍸⍵∧⊃∨/⍵∘≠¨(1⊖⍵) (¯1⊖⍵) (1⌽⍵) (¯1⌽⍵)
 	⍝ ⍺>1⊃⍴p: p
 	⍝ p[;{⍵[⍋⍵]}⍺?1⊃⍴p]
@@ -220,13 +220,13 @@ EdgePoints←{
 		n<3: n⍴0 ⍝ not enough points to get gradients
 		+∘(○0>⊢)⍨Atan2⌿-/⍵[;n|(⍳n)∘.+¯1 1]
 	}¨c
-	(⊃,/c) (⊃,/m) (≢c)
+	(⊃,/c) (⊃,/m)
 }
 
 ⍝ character set
 ⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
-⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-cs←'λ.()abcdefghijklmnopqrstuvwxyz'
+cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+⍝ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
 ⍝ cs←'λ.()fx'
  
 ⍝ logging utils
@@ -243,8 +243,8 @@ input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5' ⍝ input
 inputPoints←np EdgePoints¨           Split input.size Load input.path
 
 ⍝ (nglyphs npoints bins[0] bins[1])
- font←(bins∘Contexts⍤⊃⍤⊃)⍤0⊢ fontPoints
-input←(bins∘Contexts⍤⊃⍤⊃)⍤0⊢inputPoints
+ font←(bins Contexts ⊃)⍤0⊢ fontPoints
+input←(bins Contexts ⊃)⍤0⊢inputPoints
 
 ⍝ === SHORTLIST WITH REPRESENTATIVE SHAPE CONTEXTS ===
 nr←10                ⍝ number of representative points to select

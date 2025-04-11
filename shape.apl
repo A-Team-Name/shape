@@ -4,19 +4,14 @@
 'dec' 'disp' 'displays'⎕CY'dfns'
 'assign'⎕CY'dfns'
 
-⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
-⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-cs←'λ.()abcdefghijklmnopqrstuvwxyz'
-⍝ cs←'λ.()fx'
 Atan2←12○⊣+0J1×⊢ ⍝ x Atan2 y | https://aplcart.info?q=atan2
 
-input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5'
-
 Load←{
-	⍝ ⍵: ⍬
+	⍝ ⍺: input shape
+	⍝ ⍵: input path
 	⍝ ←: bitarray
 	tie←⍵ ⎕NTIE 0
-	data←0≤(input.size⍴⎕NREAD tie 83 ¯1)
+	data←0≤(⍺⍴⎕NREAD tie 83 ¯1)
 	_←⎕NUNTIE tie
 	data
 }
@@ -227,42 +222,63 @@ EdgePoints←{
 	(⊃,/c) (⊃,/m) (≢c)
 }
 
-⍝ scuffed logging
+⍝ character set
+⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
+⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+cs←'λ.()abcdefghijklmnopqrstuvwxyz'
+⍝ cs←'λ.()fx'
+ 
+⍝ logging utils
 time←¯1 20⎕dt⊂⎕ts
 Log←{⎕←(30↑⍵) (time-⍨¯1 20⎕DT⊂⎕TS)}
 
-npoints←100
-bins←5 12
+⍝ === OBTAIN SHAPE CONTEXTS ===
+np  ←50    ⍝ number of points to sample from the edges of a shape
+bins←5 12  ⍝ number of radial and angle bins
+input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5' ⍝ input specification
 
 ⍝ (coords bearings ncontours) for each glyph
- fontPoints←npoints DistributeOverCurves¨ Loot ⍬
-inputPoints←npoints EdgePoints¨           Split Load input.path
+ fontPoints←np DistributeOverCurves¨ Loot ⍬
+inputPoints←np EdgePoints¨           Split input.size Load input.path
 
 ⍝ (nglyphs npoints bins[0] bins[1])
  font←(Contexts⍤⊃⍤⊃)⍤0⊢ fontPoints
 input←(Contexts⍤⊃⍤⊃)⍤0⊢inputPoints
 
-nig←≢input
-nr←10
-np←npoints
-⍝ representative contexts for each input shape
-⍝ TODO: only compute the ones we need
-reps←input[;nr?np;;]
+⍝ === SHORTLIST WITH REPRESENTATIVE SHAPE CONTEXTS ===
+nr←10                ⍝ number of representative points to select
+ns←5                 ⍝ number of font glyphs to shortlist
+reps←input[;nr?np;;] ⍝ representative points
+
+⍝ ⎕←2⎕NQ'.' 'GetEnvironment' 'MAXWS'
 
 ⍝ expand the contexts to shape (ninputglyphs nfontglyphs nreps npoints bins[0] bins[1])
-⍝                                    └─────┬───┐ ┌─┴─┐ ┌───┤ ┌─┴─┐ ┌───┴─┬───────────┘ 
-sh←⍴reps ⋄ bigReps ←(≢font)⌿⍤5⊢np⌿⍤3⊢reps⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
-sh←⍴font ⋄ bigFonts←(≢reps)⌿⍤6⊢nr⌿⍤4⊢font⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
+sh←⍴reps ⋄ bigReps←(≢font)⌿⍤5⊢np⌿⍤3⊢reps⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
+sh←⍴font ⋄ bigFont←(≢reps)⌿⍤6⊢nr⌿⍤4⊢font⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
 
-c  ←.5×+/+/bigReps(×⍨⍤-÷+)bigFonts ⍝ (ninputglyphs nfontglyphs nreps npoints) matching costs (regular shape contexts)
-d  ←⌊/c                            ⍝ (ninputglyphs nfontglyphs nreps)         smallest d_GSC
-nu ←(≢font)÷⍨+⌿⍤2⊢d                ⍝ (ninputglyphs nreps)                     normalisation factor N_u
-d ÷←(≢font)⌿⍤2⊢nu⍴⍨(≢reps),1 nr    ⍝ (ninputglyphs nfontglyphs nreps)         normalised distances
-k  ←⌊nr÷2                          ⍝                                          number of RSCs to consider
-d  ←k÷⍨+/{⍵[k↑⍋⍵]}⍤1⊢d             ⍝ (ninputglyphs nfontglyphs)               representative distances between inputs and fonts
-i  ←(10↑⍋)⍤1⊢d                     ⍝ (ninputglyphs x)                         shortlists for each input glyph
+⍝                                    SHAPE                                    NOTE
+c  ←.5×+/+/bigReps(×⍨⍤-÷+)bigFont ⍝ (ninputglyphs nfontglyphs nreps npoints) matching costs
+d  ←⌊/c                           ⍝ (ninputglyphs nfontglyphs nreps)         smallest d_GSC
+nu ←(≢font)÷⍨+⌿⍤2⊢d               ⍝ (ninputglyphs nreps)                     normalisation factor N_u
+d ÷←(≢font)⌿⍤2⊢nu⍴⍨(≢reps),1 nr   ⍝ (ninputglyphs nfontglyphs nreps)         normalised distances
+k  ←⌊nr÷2                         ⍝                                          number of RSCs to consider
+d  ←k÷⍨+/{⍵[k↑⍋⍵]}⍤1⊢d            ⍝ (ninputglyphs nfontglyphs)               representative distances between inputs and fonts
+i  ←(ns↑⍋)⍤1⊢d                    ⍝ (ninputglyphs nshortlist)                shortlists for each input glyph
+
+⍝ === DETAILED MATCHIING ON SHORTLIST ===
+
+⍝ expand contexts to shape (ninputglyphs nshortlist npoints npoints bins[0] bins[1])
+sh←⍴input ⋄ bigInput←np⌿⍤3⊢                      ns⌿⍤5⊢input⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
+sh←⍴font  ⋄ bigFont ←np⌿⍤4⊢i{⍵[⍺;;;;]}⍤1 5⊢(≢input)⌿⍤6⊢font ⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
+⍝                          └──shortlist──┘
+
+⍝ detailed matching
+c←.5×+/+/bigInput(×⍨⍤-÷+)bigFont ⍝ (ninputglyphs nshortlist npoints npoints) point-point matching costs
+c←{+/+/⍵×assign ⍵}⍤2⊢c           ⍝ (ninputglyphs nshortlist)                 glyph-glyph matching costs
+⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]
 
 ⎕off
+⍝ junk lies below...
 
 sh←npoints,npoints,bins
 Cost←{
@@ -320,6 +336,7 @@ cost←input ∘.Cost font
 ⍝ - [x] consider difference in tangent angle between points
 ⍝ - [x] normalisation and weighting
 ⍝ - [x] fast pruning with representative contexts
+⍝ - [x] round it out
 ⍝ - [ ] gsc: tangent in bins
 ⍝ - [ ] basic thin-plate splines
 

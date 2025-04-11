@@ -229,11 +229,11 @@ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
 ⍝ cs←'λ.()fx'
  
 ⍝ logging utils
-time←¯1 20⎕dt⊂⎕ts
-Log←{⎕←(30↑⍵) (time-⍨¯1 20⎕DT⊂⎕TS)}
+time←¯1 12⎕DT⊂⎕TS
+Log←{⎕←(30↑⍵) (1000÷⍨time-⍨¯1 12⎕DT⊂⎕TS)}
 
 ⍝ === OBTAIN SHAPE CONTEXTS ===
-np  ←50    ⍝ number of points to sample from the edges of a shape
+np  ←100   ⍝ number of points to sample from the edges of a shape
 bins←5 12  ⍝ number of radial and angle bins
 input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5' ⍝ input specification
 
@@ -242,22 +242,26 @@ input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5' ⍝ input
 inputPoints←np EdgePoints¨           Split input.size Load input.path
 
 ⍝ (nglyphs npoints bins[0] bins[1])
- font←(Contexts⍤⊃⍤⊃)⍤0⊢ fontPoints
-input←(Contexts⍤⊃⍤⊃)⍤0⊢inputPoints
+ font←(bins∘Contexts⍤⊃⍤⊃)⍤0⊢ fontPoints
+input←(bins∘Contexts⍤⊃⍤⊃)⍤0⊢inputPoints
 
 ⍝ === SHORTLIST WITH REPRESENTATIVE SHAPE CONTEXTS ===
 nr←10                ⍝ number of representative points to select
 ns←5                 ⍝ number of font glyphs to shortlist
-reps←input[;nr?np;;] ⍝ representative points
+reps←input[;nr?np;;] ⍝ filter to representative points
 
-⍝ ⎕←2⎕NQ'.' 'GetEnvironment' 'MAXWS'
+⍝ get point-point matching costs with shape (ninputglyphs nfontglyphs nreps npoints)
 
+⍝ flat, more memory
 ⍝ expand the contexts to shape (ninputglyphs nfontglyphs nreps npoints bins[0] bins[1])
-sh←⍴reps ⋄ bigReps←(≢font)⌿⍤5⊢np⌿⍤3⊢reps⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
-sh←⍴font ⋄ bigFont←(≢reps)⌿⍤6⊢nr⌿⍤4⊢font⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
+⍝ sh←⍴reps ⋄ bigReps←(≢font)⌿⍤5⊢np⌿⍤3⊢reps⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
+⍝ sh←⍴font ⋄ bigFont←(≢reps)⌿⍤6⊢nr⌿⍤4⊢font⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
+⍝ c  ←.5×+/+/bigReps(×⍨⍤-÷+)bigFont ⍝ (ninputglyphs nfontglyphs nreps npoints) point-point matching costs
 
-⍝                                    SHAPE                                    NOTE
-c  ←.5×+/+/bigReps(×⍨⍤-÷+)bigFont ⍝ (ninputglyphs nfontglyphs nreps npoints) matching costs
+⍝ non-flat, less memory (maybe slower?)
+c←.5×↑reps∘.(↑∘.(+/⍣2×⍨⍤-÷+)⍥(⊂⍤2))⍥(⊂⍤3)font
+
+⍝                                   SHAPE                                    NOTE
 d  ←⌊/c                           ⍝ (ninputglyphs nfontglyphs nreps)         smallest d_GSC
 nu ←(≢font)÷⍨+⌿⍤2⊢d               ⍝ (ninputglyphs nreps)                     normalisation factor N_u
 d ÷←(≢font)⌿⍤2⊢nu⍴⍨(≢reps),1 nr   ⍝ (ninputglyphs nfontglyphs nreps)         normalised distances
@@ -267,15 +271,20 @@ i  ←(ns↑⍋)⍤1⊢d                    ⍝ (ninputglyphs nshortlist)       
 
 ⍝ === DETAILED MATCHIING ON SHORTLIST ===
 
+⍝ get point-point matching costs as before, shape (ninputglyphs nshortlist npoints npoints)
+
 ⍝ expand contexts to shape (ninputglyphs nshortlist npoints npoints bins[0] bins[1])
-sh←⍴input ⋄ bigInput←np⌿⍤3⊢                      ns⌿⍤5⊢input⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
-sh←⍴font  ⋄ bigFont ←np⌿⍤4⊢i{⍵[⍺;;;;]}⍤1 5⊢(≢input)⌿⍤6⊢font ⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
+⍝ sh←⍴input ⋄ bigInput←np⌿⍤3⊢                      ns⌿⍤5⊢input⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
+⍝ sh←⍴font  ⋄ bigFont ←np⌿⍤4⊢i{⍵[⍺;;;;]}⍤1 5⊢(≢input)⌿⍤6⊢font ⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
 ⍝                          └──shortlist──┘
+⍝ c←.5×+/+/bigInput(×⍨⍤-÷+)bigFont 
+
+c←.5×{input[⍵;;;](↑∘.(+/⍣2×⍨⍤-÷+)⍥(⊂⍤2))⍤3⊢font[i[⍵;];;;]}⍤0⍳≢input
 
 ⍝ detailed matching
-c←.5×+/+/bigInput(×⍨⍤-÷+)bigFont ⍝ (ninputglyphs nshortlist npoints npoints) point-point matching costs
-c←{+/+/⍵×assign ⍵}⍤2⊢c           ⍝ (ninputglyphs nshortlist)                 glyph-glyph matching costs
-⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]
+⍝                        SHAPE                     NOTE
+c←{+/+/⍵×assign ⍵}⍤2⊢c ⍝ (ninputglyphs nshortlist) glyph-glyph matching costs (everybody say thank you John Scholes)
+⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]    ⍝ (nshortlist ninputglyphs) minimum cost assignments
 
 ⎕off
 ⍝ junk lies below...
@@ -337,12 +346,13 @@ cost←input ∘.Cost font
 ⍝ - [x] normalisation and weighting
 ⍝ - [x] fast pruning with representative contexts
 ⍝ - [x] round it out
+⍝ - [ ] lambda calc tests
+⍝ - [ ] apl tests
+
 ⍝ - [ ] gsc: tangent in bins
 ⍝ - [ ] basic thin-plate splines
-
 ⍝ - [ ] regularised tps
 ⍝ - [ ] improve distribution of points over bezier curve
-⍝ - [ ] lambda calc tests
 ⍝ - [ ] more accurate angles from edgepoints (least squares?)
 ⍝ - [ ] draw from more fonts
 ⍝ - [ ] fast pruning with shapemes??

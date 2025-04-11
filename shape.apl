@@ -172,11 +172,12 @@ Contexts←{
 	(max min)←(⌈/,⌊/)∊r
 	i   ←r⍸⍨¨⊂min+(max-min)×(⍳÷   ⊢)rb-1 ⍝ bin distances
 	i,¨¨←t⍸⍨¨⊂          ○¯1+(⍳÷.5×⊢)tb   ⍝ bin angles
-	↑{
-		h←rb tb⍴0
-		h[⍵]+←1
-		h
-	}¨i
+	F←{
+		h←rb tb⍴⊂0 0
+		h[⍺]←↓⍵∘.(○⍨)1 2
+		(⊢÷.5*⍨+.×⍨)∊h
+	}
+	↑i F¨0×m/¨⊂a ⍝ 0× reduces this to vanilla shape contexts
 }
 
 EdgePoints←{
@@ -225,8 +226,8 @@ EdgePoints←{
 
 ⍝ character set
 ⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
-cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-⍝ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
+⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+cs←'λ.()abcdefghijklmnopqrstuvwxyz'
 ⍝ cs←'λ.()fx'
  
 ⍝ logging utils
@@ -247,45 +248,24 @@ inputPoints←np EdgePoints¨           Split input.size Load input.path
 input←(bins Contexts ⊃)⍤0⊢inputPoints
 
 ⍝ === SHORTLIST WITH REPRESENTATIVE SHAPE CONTEXTS ===
-nr←10                ⍝ number of representative points to select
-ns←5                 ⍝ number of font glyphs to shortlist
-reps←input[;nr?np;;] ⍝ filter to representative points
+nr←10               ⍝ number of representative points to select
+ns←5                ⍝ number of font glyphs to shortlist
+reps←input[;nr?np;] ⍝ filter to representative points
 
-⍝ get point-point matching costs with shape (ninputglyphs nfontglyphs nreps npoints)
-
-⍝ flat, more memory
-⍝ expand the contexts to shape (ninputglyphs nfontglyphs nreps npoints bins[0] bins[1])
-⍝ sh←⍴reps ⋄ bigReps←(≢font)⌿⍤5⊢np⌿⍤3⊢reps⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
-⍝ sh←⍴font ⋄ bigFont←(≢reps)⌿⍤6⊢nr⌿⍤4⊢font⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
-⍝ c  ←.5×+/+/bigReps(×⍨⍤-÷+)bigFont ⍝ (ninputglyphs nfontglyphs nreps npoints) point-point matching costs
-
-⍝ non-flat, less memory (maybe slower?)
-c←.5×↑reps∘.(↑∘.(+/⍣2×⍨⍤-÷+)⍥(⊂⍤2))⍥(⊂⍤3)font
-
-⍝                                   SHAPE                                    NOTE
-d  ←⌊/c                           ⍝ (ninputglyphs nfontglyphs nreps)         smallest d_GSC
-nu ←(≢font)÷⍨+⌿⍤2⊢d               ⍝ (ninputglyphs nreps)                     normalisation factor N_u
-d ÷←(≢font)⌿⍤2⊢nu⍴⍨(≢reps),1 nr   ⍝ (ninputglyphs nfontglyphs nreps)         normalised distances
-k  ←⌊nr÷2                         ⍝                                          number of RSCs to consider
-d  ←k÷⍨+/{⍵[k↑⍋⍵]}⍤1⊢d            ⍝ (ninputglyphs nfontglyphs)               representative distances between inputs and fonts
-i  ←(ns↑⍋)⍤1⊢d                    ⍝ (ninputglyphs nshortlist)                shortlists for each input glyph
+⍝                                               SHAPE                                    NOTE
+c←.5×↑reps∘.(↑∘.(.5*⍨+.×⍨⍤-)⍥(⊂⍤1))⍥(⊂⍤2)font ⍝ (ninputglyphs nfontglyphs nreps npoints) point-point matching costs
+d  ←⌊/c                                       ⍝ (ninputglyphs nfontglyphs nreps)         smallest d_GSC
+nu ←(≢font)÷⍨+⌿⍤2⊢d                           ⍝ (ninputglyphs nreps)                     normalisation factor N_u
+d ÷←(≢font)⌿⍤2⊢nu⍴⍨(≢reps),1 nr               ⍝ (ninputglyphs nfontglyphs nreps)         normalised distances
+k  ←⌊nr÷2                                     ⍝                                          number of RSCs to consider
+d  ←k÷⍨+/{⍵[k↑⍋⍵]}⍤1⊢d                        ⍝ (ninputglyphs nfontglyphs)               representative distances between inputs and fonts
+i  ←(ns↑⍋)⍤1⊢d                                ⍝ (ninputglyphs nshortlist)                shortlists for each input glyph
 
 ⍝ === DETAILED MATCHIING ON SHORTLIST ===
-
-⍝ get point-point matching costs as before, shape (ninputglyphs nshortlist npoints npoints)
-
-⍝ expand contexts to shape (ninputglyphs nshortlist npoints npoints bins[0] bins[1])
-⍝ sh←⍴input ⋄ bigInput←np⌿⍤3⊢                      ns⌿⍤5⊢input⍴⍨sh[0],1    ,sh[1],1    ,sh[2 3]
-⍝ sh←⍴font  ⋄ bigFont ←np⌿⍤4⊢i{⍵[⍺;;;;]}⍤1 5⊢(≢input)⌿⍤6⊢font ⍴⍨1    ,sh[0],1    ,sh[1],sh[2 3]
-⍝                          └──shortlist──┘
-⍝ c←.5×+/+/bigInput(×⍨⍤-÷+)bigFont 
-
-c←.5×{input[⍵;;;](↑∘.(+/⍣2×⍨⍤-÷+)⍥(⊂⍤2))⍤3⊢font[i[⍵;];;;]}⍤0⍳≢input
-
-⍝ detailed matching
-⍝                        SHAPE                     NOTE
-c←{+/+/⍵×assign ⍵}⍤2⊢c ⍝ (ninputglyphs nshortlist) glyph-glyph matching costs (everybody say thank you John Scholes)
-⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]    ⍝ (nshortlist ninputglyphs) minimum cost assignments
+⍝                                                                     SHAPE                                     NOTE
+c←.5×{input[⍵;;](↑∘.(.5*⍨+.×⍨⍤-)⍥(⊂⍤1))⍤2⊢font[i[⍵;];;]}⍤0⍳≢input ⍝ (ninputglyphs nshortlist npoints npoints) point-point matching costs
+c←{+/+/⍵×assign ⍵}⍤2⊢c                                            ⍝ (ninputglyphs nshortlist)                 glyph-glyph matching costs (everybody say thank you John Scholes)
+⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]                                               ⍝ (nshortlist ninputglyphs)                 minimum cost assignments
 
 ⎕off
 ⍝ junk lies below...

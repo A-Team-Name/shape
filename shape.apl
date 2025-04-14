@@ -215,7 +215,7 @@ EdgePoints←{
 		⍺∇i j         ⍝ continue on next point around the curve, tco babyy
 	}¨p
 	c←c{⍺[;⌊⍵÷⍨(1⊃⍴⍺)×⍳⍵]}¨⍺ Distribute (1⊃⍴)¨c ⍝ pick points from contour
-	c←{1 ¯1×⍤0 1⊖⍵}¨c ⍝ i j → x y
+	c←{0 (⌈/⍵[0;])+⍤0 1⊢1 ¯1×⍤0 1⊖⍵}¨c ⍝ i j → x y
 	m←{
 		n←1⊃⍴⍵
 		n<3: n⍴0 ⍝ not enough points to get gradients
@@ -234,7 +234,7 @@ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
 time←¯1 12⎕DT⊂⎕TS
 Log←{⎕←(30↑⍵) (1000÷⍨time-⍨¯1 12⎕DT⊂⎕TS)}
 
-⍝ === OBTAIN SHAPE CONTEXTS ===
+⍝ obtain shape contexts
 np  ←100   ⍝ number of points to sample from the edges of a shape
 bins←5 12  ⍝ number of radial and angle bins
 input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5' ⍝ input specification
@@ -247,7 +247,7 @@ inputPoints←np EdgePoints¨           Split input.size Load input.path
  font←(bins Contexts ⊃)⍤0⊢ fontPoints
 input←(bins Contexts ⊃)⍤0⊢inputPoints
 
-⍝ === SHORTLIST WITH REPRESENTATIVE SHAPE CONTEXTS ===
+⍝ obtain shape contexts
 nr←10               ⍝ number of representative points to select
 ns←5                ⍝ number of font glyphs to shortlist
 reps←input[;nr?np;] ⍝ filter to representative points
@@ -262,9 +262,27 @@ d  ←k÷⍨+/{⍵[k↑⍋⍵]}⍤1⊢d                     ⍝ (ninputglyphs nf
 i  ←(ns↑⍋)⍤1⊢d                             ⍝ (ninputglyphs nshortlist)                shortlists for each input glyph
 
 ⍝ === DETAILED MATCHIING ON SHORTLIST ===
+Visualise←{
+	(i j)←⍺
+	m←⍵[i;j;;]
+	ip←⊃i⊃inputPoints
+	ip÷←⌈/⌈/ip
+	fp←⊃j⊃fontPoints
+	fp÷←⌈/⌈/fp
+	py←'import matplotlib.pyplot as plt;'
+	py,←∊{
+		'plt.plot(',(∊ip[;⊃⍵]{'[',(⍕⍺),',',(⍕⍵),'],'}¨fp[;1⊃⍵]),'"g");'
+	}¨⍸m
+	py,←⊃{'plt.scatter(',⍺,',',⍵,', c = "red");'}⌿{'[',(∊',',¨⍨⍕¨⍵),']'}¨↓fp
+	py,←⊃{'plt.scatter(',⍺,',',⍵,', c = "black");'}⌿{'[',(∊',',¨⍨⍕¨⍵),']'}¨↓ip
+	py,←'plt.show()'
+	⎕SH 'python3 -c ''',('¯'⎕R'-'⊢py),''''
+}
 ⍝                                                                     SHAPE                                     NOTE
 c←{input[⍵;;](↑∘.(.5*⍨+.×⍨⍤-)⍥(⊂⍤1))⍤2⊢font[i[⍵;];;]}⍤0⍳≢input ⍝ (ninputglyphs nshortlist npoints npoints) point-point matching costs
-c←{+/+/⍵×assign ⍵}⍤2⊢c                                         ⍝ (ninputglyphs nshortlist)                 glyph-glyph matching costs (everybody say thank you John Scholes)
+m←assign⍤2⊢c                                                   ⍝ (ninputglyphs nshortlist npoints npoints) optimal assignments
+⍝ 0 0 Visualise m
+c←+/+/c×m                                                      ⍝ (ninputglyphs nshortlist)                 glyph-glyph matching costs
 ⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]                                            ⍝ (nshortlist ninputglyphs)                 minimum cost assignments
 
 ⎕off
@@ -328,15 +346,17 @@ cost←input ∘.Cost font
 ⍝ - [x] fast pruning with representative contexts
 ⍝ - [x] round it out
 ⍝ - [x] nested matching cost calculations for less wsfulls
-⍝ - [ ] gsc: tangent in bins
+⍝ - [x] gsc: tangent in bins - doesn't work :wah:
 ⍝ - [ ] lambda calc tests
 ⍝ - [ ] apl tests
+⍝ - [ ] get it installed in the handwriting server
 
+⍝ FUTURE WORK:
 ⍝ - [ ] basic thin-plate splines
 ⍝ - [ ] regularised tps
 ⍝ - [ ] improve distribution of points over bezier curve
 ⍝ - [ ] more accurate angles from edgepoints (least squares?)
 ⍝ - [ ] draw from more fonts
-⍝ - [ ] fast pruning with shapemes??
+⍝ - [ ] fast pruning with shapemes
 ⍝ - [ ] gaussian windows
 

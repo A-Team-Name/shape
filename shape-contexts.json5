@@ -3,6 +3,7 @@
 //     path: 'my-image.gray' // single, 8-bit channel
 // }
 
+// DANGER: these inputs are way too skinny, breaks the contour detection
 // {
 //     size: [124, 877],
 //     path: "josh.gray",
@@ -26,4 +27,9 @@
 // {
 //     size: [395, 842],
 //     path: "img.bytes",
+// }
+
+// {
+//     size: [70, 70],
+//     path: 'dot.gray',
 // }

@@ -158,33 +158,6 @@ DistributeOverCurves←{
 	xy m
 }
 
-Contexts←{
-	⍝ ⍺[0]: number of distance bins
-	⍝ ⍺[1]: number of angle bins
-	⍝ ⍵: (a b) where
-	⍝    a: points matrix with shape 2 (x y) × n
-	⍝    b: angles vector with shape n
-	⍝ ←: n×⍺[0]×⍺[1] array of shape contexts
-
-	⍺←5 12
-	(rb tb)←⍺
-	(xy a) ←⍵
-	d←∘.-⍨⍤1⊢xy                          ⍝ x-x and y-y differences
-	r←↓.5*⍨+⌿×⍨d                         ⍝ distances
-	m←r>0                                ⍝ mask(s) of points that are different
-	r←⍟m/¨r                              ⍝ filter r
-	t←m/¨↓Atan2⌿d                        ⍝ angles (filtered)
-	(max min)←(⌈/,⌊/)∊r
-	i   ←r⍸⍨¨⊂min+(max-min)×(⍳÷   ⊢)rb-1 ⍝ bin distances
-	i,¨¨←t⍸⍨¨⊂          ○¯1+(⍳÷.5×⊢)tb   ⍝ bin angles
-	F←{
-		h←rb tb⍴⊂0 0
-		h[⍺]←↓⍵∘.(○⍨)1 2
-		(⊢÷.5*⍨+.×⍨)∊h
-	}
-	↑i F¨m/¨⊂a
-}
-
 EdgePoints←{
 	⍝ ⍺: number of edgepoints to pick (default 100)
 	⍝    if ⍺ > points in the image, there will be duplicate points
@@ -228,10 +201,52 @@ EdgePoints←{
 	(⊃,/c) (⊃,/m)
 }
 
+
+ContextsPreprocess←{
+	(rb tb)←⍺
+	(xy a) ←⍵
+	d←∘.-⍨⍤1⊢xy                        ⍝ x-x and y-y differences
+	r←↓.5*⍨+⌿×⍨d                       ⍝ distances
+	m←r>0                              ⍝ mask(s) of points that are different
+	r←⍟m/¨r                            ⍝ filter r and log
+	t←m/¨↓Atan2⌿d                      ⍝ angles (filtered)
+	(max min)←(⌈/,⌊/)∊r
+	(a r t m max min)                  ⍝─┐
+}                                      ⍝ │
+                                       ⍝ │
+ContextsHistogram←{                    ⍝ │
+	(rb tb)←⍺                          ⍝ │
+	(a r t m max min)←⍵                ⍝←┘
+	i   ←r⍸⍨¨⊂min+(max-min)×(⍳÷   ⊢)rb ⍝ bin distances
+	i,¨¨←t⍸⍨¨⊂          ○¯1+(⍳÷.5×⊢)tb ⍝ bin angles
+	F←{
+		h←rb tb⍴⊂0 0                   ⍝ blank histogram
+		h[⍺]+←↓⍵∘.(○⍨)1 2              ⍝ sum unit vectors in each bin
+		(⊢÷.5*⍨+.×⍨)∊h                 ⍝ into vector and normalise
+	}
+	↑i F¨m/¨⊂a
+}
+
+Contexts←{
+	⍝ ⍺[0]: number of distance bins
+	⍝ ⍺[1]: number of angle bins
+	⍝ ⍵: length m vector of pairs (a b) where
+	⍝    a: points matrix with shape 2 (x y) × n
+	⍝    b: angles vector with shape n
+	⍝ ←: m×n×⍺[0]×⍺[1] array of shape contexts
+
+	⍝ the contexts calculations are divided into two stages
+	⍝ because we need to collect the min and max distances
+	⍝ across all glyphs
+	pp←⍺∘ContextsPreprocess¨⍵     ⍝ get the preprocessed values
+	pp←(¯2↓¨pp),¨{(⌈/⍺),(⌊/⍵)}/↓⍉↑¯2↑¨pp ⍝ get max and min across all glyphs
+	↑⍺∘ContextsHistogram¨pp       ⍝ continue
+}
+
 ⍝ character set
 ⍝ ascii - `"` + `˙` + apl/bqn specials
-⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-cs←'λ.()abcdefghijklmnopqrstuvwxyz'
+cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+⍝ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
 ⍝ cs←'λ.()fx'
 ⍝ cs←,'.'
  
@@ -256,12 +271,12 @@ VisualisePoints←{
 	⎕SH 'python3 -c ''',('¯'⎕R'-'⊢py),''''
 }
 
-0 VisualisePoints fontPoints
-0 VisualisePoints inputPoints
+⍝ 0 VisualisePoints fontPoints
+⍝ 1 VisualisePoints inputPoints
 
 ⍝ (nglyphs npoints bins[0] bins[1])
- font←(bins Contexts ⊃)⍤0⊢ fontPoints
-input←(bins Contexts ⊃)⍤0⊢inputPoints
+ font←bins Contexts  fontPoints
+input←bins Contexts inputPoints
 
 ⍝ obtain shape contexts
 nr←10               ⍝ number of representative points to select
@@ -279,11 +294,11 @@ i  ←(⍋↑⍨ns⌊≢)⍤1⊢d                          ⍝ (ninputglyphs nsh
 
 ⍝ === DETAILED MATCHIING ON SHORTLIST ===
 VisualiseMatching←{
-	(i j)←⍺
-	m←⍵[i;j;;]
-	ip←⊃i⊃inputPoints
+	(j k)←⍺
+	m←⍵[j;k;;]
+	ip←⊃j⊃inputPoints
 	ip÷←⌈/⌈/ip
-	fp←⊃j⊃fontPoints
+	fp←⊃k⊃fontPoints[i[j;]]
 	fp÷←⌈/⌈/fp
 	py←'import matplotlib.pyplot as plt;'
 	py,←∊{
@@ -297,7 +312,7 @@ VisualiseMatching←{
 ⍝                                                                     SHAPE                                     NOTE
 c←{input[⍵;;](↑∘.(.5*⍨+.×⍨⍤-)⍥(⊂⍤1))⍤2⊢font[i[⍵;];;]}⍤0⍳≢input ⍝ (ninputglyphs nshortlist npoints npoints) point-point matching costs
 m←assign⍤2⊢c                                                   ⍝ (ninputglyphs nshortlist npoints npoints) optimal assignments
-0 0 VisualiseMatching m
+⍝ {2 ⍵ VisualiseMatching m}¨⍳ns
 c←+/+/c×m                                                      ⍝ (ninputglyphs nshortlist)                 glyph-glyph matching costs
 ⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]                                            ⍝ (nshortlist ninputglyphs)                 minimum cost assignments
 

@@ -5,6 +5,11 @@
 'assign'⎕CY'dfns'
 
 Atan2←12○⊣+0J1×⊢ ⍝ x Atan2 y | https://aplcart.info?q=atan2
+_tr←{⍵⊣⎕←⍺⍺ ⍵}   ⍝ logging, eg ⍴_tr
+Atan←{ ⍝ x Atan y
+	⎕DIV←1
+	+∘(○0>⊢)⍨¯3○(○.5)@(⍺=0⍨)⍵÷⍺
+}
 
 Load←{
 	⍝ ⍺: input shape
@@ -149,7 +154,7 @@ DistributeOverCurves←{
 	b ←       +⌿⍤2⊢t×⍤2⊢⍵[;1 2;]
 	xy←(⊃,/)⍤1+⌿⍤2⊢t×⍤2⊢1 0 2⍉↑a b
 	⍝ B'(t) = 2(1-t)(P1-P0)+2t(P2-P1)
-	m←+∘(○0>⊢)⍨Atan2⌿+⌿⍤2(⊃,/)⍤1⊢t×⍤2⊢2×¯2-⌿⍤2⊢⍵ ⍝ normalised to >0
+	m←Atan⌿+⌿⍤2(⊃,/)⍤1⊢t×⍤2⊢2×¯2-⌿⍤2⊢⍵
 	xy m
 }
 
@@ -177,7 +182,7 @@ Contexts←{
 		h[⍺]←↓⍵∘.(○⍨)1 2
 		(⊢÷.5*⍨+.×⍨)∊h
 	}
-	↑i F¨0×m/¨⊂a ⍝ 0× reduces this to vanilla shape contexts
+	↑i F¨m/¨⊂a
 }
 
 EdgePoints←{
@@ -200,35 +205,35 @@ EdgePoints←{
 	c←⍬                  ⍝ contours list
 	ci←¯1+0×b            ⍝ contours list indices
 	pi←2(⊢,¨⌽)1(⊢+⌽)3<⍳8 ⍝ indices of perimeter of the square
-	_←{
-		⍺←{ ⍝ current contour (create if none)
-			a←⍵⌷ci
-			a≠¯1: a
-			c,←⊂2 0⍴⍬
-			¯1+≢c
+	_←{                  ⍝ for each point
+		¯1≠⍵⌷ci: 1       ⍝ if this point has already been assigned a contour, continue
+		⍺←{              ⍝ current contour (create if none)
+			c,←⊂2 0⍴⍬    ⍝ add new contour
+			¯1+≢c        ⍝ index in c of new contour
 		}⍵
-		(⍺⊃c),←⍪⍵
+		(⍺⊃c),←⍪⍵        ⍝ add this point to the current contour
 		(i j)←⍵
-		ci[i;j]←⍺
+		ci[i;j]←⍺        ⍝ mark it on the matrix
 		(i j)←⍵+¯1+pi⊃⍨8|1+⊃⍸2</9⍴b[¯1 0 1+i;¯1 0 1+j][pi] ⍝ indices of the next point
-		ci[i;j]≠¯1: ⍺ ⍝ loop complete
-		⍺∇i j         ⍝ continue on next point around the curve, tco babyy
+		ci[i;j]≠¯1: ⍺    ⍝ loop complete
+		⍺∇i j            ⍝ continue on next point around the curve, tco babyy
 	}¨p
 	c←c{⍺[;⌊⍵÷⍨(1⊃⍴⍺)×⍳⍵]}¨⍺ Distribute (1⊃⍴)¨c ⍝ pick points from contour
 	c←{0 (⌈/⍵[0;])+⍤0 1⊢1 ¯1×⍤0 1⊖⍵}¨c ⍝ i j → x y
 	m←{
 		n←1⊃⍴⍵
 		n<3: n⍴0 ⍝ not enough points to get gradients
-		+∘(○0>⊢)⍨Atan2⌿-/⍵[;n|(⍳n)∘.+¯1 1]
+		Atan⌿-/⍵[;n|(⍳n)∘.+¯1 1]
 	}¨c
 	(⊃,/c) (⊃,/m)
 }
 
 ⍝ character set
-⍝ ascii - `"` + `˙` + `λ` + apl/bqn specials
-⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙λ∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+⍝ ascii - `"` + `˙` + apl/bqn specials
+⍝ cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
 cs←'λ.()abcdefghijklmnopqrstuvwxyz'
 ⍝ cs←'λ.()fx'
+⍝ cs←,'.'
  
 ⍝ logging utils
 time←¯1 12⎕DT⊂⎕TS
@@ -239,9 +244,20 @@ np  ←100   ⍝ number of points to sample from the edges of a shape
 bins←5 12  ⍝ number of radial and angle bins
 input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5' ⍝ input specification
 
-⍝ (coords bearings ncontours) for each glyph
+⍝ (coords bearings) for each glyph
  fontPoints←np DistributeOverCurves¨ Loot ⍬
 inputPoints←np EdgePoints¨           Split input.size Load input.path
+
+VisualisePoints←{
+	(xy m)←⍺⊃⍵
+	py←'import matplotlib.pyplot as plt;'
+	_←(⍉xy){py,←'plt.quiver(',(⍕0⊃⍺),',',(⍕1⊃⍺),',',(⍕2○⍵),',',(⍕1○⍵),');'}⍤1 0⊢m
+	py,←'plt.show()'
+	⎕SH 'python3 -c ''',('¯'⎕R'-'⊢py),''''
+}
+
+0 VisualisePoints fontPoints
+0 VisualisePoints inputPoints
 
 ⍝ (nglyphs npoints bins[0] bins[1])
  font←(bins Contexts ⊃)⍤0⊢ fontPoints
@@ -259,10 +275,10 @@ nu ←(≢font)÷⍨+⌿⍤2⊢d                        ⍝ (ninputglyphs nreps)
 d ÷←(≢font)⌿⍤2⊢nu⍴⍨(≢reps),1 nr            ⍝ (ninputglyphs nfontglyphs nreps)         normalised distances
 k  ←⌊nr÷2                                  ⍝                                          number of RSCs to consider
 d  ←k÷⍨+/{⍵[k↑⍋⍵]}⍤1⊢d                     ⍝ (ninputglyphs nfontglyphs)               representative distances between inputs and fonts
-i  ←(ns↑⍋)⍤1⊢d                             ⍝ (ninputglyphs nshortlist)                shortlists for each input glyph
+i  ←(⍋↑⍨ns⌊≢)⍤1⊢d                          ⍝ (ninputglyphs nshortlist)                shortlists for each input glyph
 
 ⍝ === DETAILED MATCHIING ON SHORTLIST ===
-Visualise←{
+VisualiseMatching←{
 	(i j)←⍺
 	m←⍵[i;j;;]
 	ip←⊃i⊃inputPoints
@@ -281,7 +297,7 @@ Visualise←{
 ⍝                                                                     SHAPE                                     NOTE
 c←{input[⍵;;](↑∘.(.5*⍨+.×⍨⍤-)⍥(⊂⍤1))⍤2⊢font[i[⍵;];;]}⍤0⍳≢input ⍝ (ninputglyphs nshortlist npoints npoints) point-point matching costs
 m←assign⍤2⊢c                                                   ⍝ (ninputglyphs nshortlist npoints npoints) optimal assignments
-⍝ 0 0 Visualise m
+0 0 VisualiseMatching m
 c←+/+/c×m                                                      ⍝ (ninputglyphs nshortlist)                 glyph-glyph matching costs
 ⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]                                            ⍝ (nshortlist ninputglyphs)                 minimum cost assignments
 

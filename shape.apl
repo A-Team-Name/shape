@@ -243,12 +243,6 @@ Contexts←{
 	↑⍺∘ContextsHistogram¨pp       ⍝ continue
 }
 
-⍝ character set
-⍝ ascii - `"` + `˙` + apl/bqn specials
-cs←'!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
-⍝ cs←'λ.()abcdefghijklmnopqrstuvwxyz'
-⍝ cs←'λ.()fx'
-⍝ cs←,'.'
  
 ⍝ logging utils
 time←¯1 12⎕DT⊂⎕TS
@@ -258,6 +252,11 @@ Log←{⎕←(30↑⍵) (1000÷⍨time-⍨¯1 12⎕DT⊂⎕TS)}
 np  ←100   ⍝ number of points to sample from the edges of a shape
 bins←5 12  ⍝ number of radial and angle bins
 input←⎕JSON⎕OPT'Dialect' 'JSON5'⊃⎕NGET'shape-contexts.json5' ⍝ input specification
+cs←{
+	⍵≡'lc':  'λ.()abcdefghijklmnopqrstuvwxyz'
+	⍵≡'apl': '!#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~˙∇⋄⍝⍺⍵¯×÷←↑→↓∆∊∘∧∨∩∪≠≡≢≤≥⊂⊃⊆⊖⊢⊣⊤⊥⌈⌊⌶⌷⎕⌸⌹⌺⌽⌿⍀⍉⍋⍎⍒⍕⍙⍟⍠⍣⍤⍥⍨⍪⍬⍱⍲⍳⍴⍷⍸○⍬⊇⍛⍢⍫√'
+	⍝ (ascii - `"` + `˙` + apl/bqn specials)
+}input.alphabet
 
 ⍝ (coords bearings) for each glyph
  fontPoints←np DistributeOverCurves¨ Loot ⍬
@@ -272,7 +271,7 @@ VisualisePoints←{
 }
 
 ⍝ 0 VisualisePoints fontPoints
-⍝ 1 VisualisePoints inputPoints
+⍝ 0 VisualisePoints inputPoints
 
 ⍝ (nglyphs npoints bins[0] bins[1])
  font←bins Contexts  fontPoints
@@ -309,10 +308,10 @@ VisualiseMatching←{
 	py,←'plt.show()'
 	⎕SH 'python3 -c ''',('¯'⎕R'-'⊢py),''''
 }
-⍝                                                                     SHAPE                                     NOTE
+⍝                                                                SHAPE                                     NOTE
 c←{input[⍵;;](↑∘.(.5*⍨+.×⍨⍤-)⍥(⊂⍤1))⍤2⊢font[i[⍵;];;]}⍤0⍳≢input ⍝ (ninputglyphs nshortlist npoints npoints) point-point matching costs
 m←assign⍤2⊢c                                                   ⍝ (ninputglyphs nshortlist npoints npoints) optimal assignments
-⍝ {2 ⍵ VisualiseMatching m}¨⍳ns
+⍝ {0 ⍵ VisualiseMatching m}¨⍳ns
 c←+/+/c×m                                                      ⍝ (ninputglyphs nshortlist)                 glyph-glyph matching costs
 ⎕←⍉cs[i{⍺[⍋⍵]}⍤1⊢c]                                            ⍝ (nshortlist ninputglyphs)                 minimum cost assignments
 
